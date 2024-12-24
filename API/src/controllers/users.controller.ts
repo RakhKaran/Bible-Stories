@@ -168,6 +168,68 @@ export class UsersController {
       }
     }
   }
+
+  // Admin login authentication API using email and password.
+  @post('/auth/customer-login')
+  async customerLogin(
+    @requestBody({
+      description: 'Login with phone number for customer',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              phoneNumber: { type: 'string', description: 'Customer Login' },
+              password: { type: 'string', description: 'Customer password' },
+            },
+          },
+        },
+      },
+    })
+    requestBody: { phoneNumber: string; password: string },
+  ): Promise<any> {
+    try {
+      const { phoneNumber, password } = requestBody;
+  
+      // Find user by email
+      const user = await this.usersRepository.findOne({ where: { phoneNumber } });
+      if (!user) {
+        throw new HttpErrors.BadRequest('Phone number does not exist');
+      }
+  
+      // Check if the user is active
+      if (!user.isActive) {
+        throw new HttpErrors.BadRequest('User is not active');
+      }
+  
+      // Compare password
+      const passwordMatch = await this.passwordHasher.comparePassword(password, user.password);
+      if (passwordMatch) {
+        // Generate JWT token and return user data
+        const userProfile = this.userService.convertToUserProfile(user);
+        const userData = _.omit(userProfile, 'password'); // Omit the password field
+        const token = await this.jwtService.generateToken(userProfile);
+        return {
+          success: true,
+          accessToken: token,
+          userData,
+          message: 'User is successfully logged in.',
+        };
+      } else {
+        throw new HttpErrors.BadRequest('Invalid credentials');
+      }
+    } catch (error) {
+      if (error instanceof HttpErrors.HttpError) {
+        // If the error is a known HttpError, return it as is
+        throw error;
+      } else {
+        // Otherwise, throw an internal server error
+        console.error('Unexpected error during login:', error); // Log the unexpected error
+        throw new HttpErrors.InternalServerError('An error occurred during login');
+      }
+    }
+  }
   
   // // customer otp send
   // @post('/auth/customer-otp-login', {
@@ -647,4 +709,58 @@ export class UsersController {
       throw error;
     }
   }
+
+  // update new password
+  @patch('/customer/update-new-password')
+  async customerUpdateNewPassword(
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            properties : {
+              phoneNumber : {
+                type : 'string',
+                description : 'phone number of user'
+              },
+              password : {
+                type : 'string',
+                description : 'new password'
+              }
+            }
+          }
+        }
+      }
+    })
+    requestBody : {
+      phoneNumber : string;
+      password : string;
+    }
+  ) : Promise<object>{
+    try{
+      const { phoneNumber, password } = requestBody;
+
+      const userData = await this.usersRepository.findOne({
+        where : {
+          phoneNumber : phoneNumber
+        }
+      });
+
+      if(!userData){
+        throw new HttpErrors.BadRequest('User not found');
+      }
+
+      const hashedPassword = await this.passwordHasher.hashPassword(password);
+
+      await this.usersRepository.updateById(userData.id,{password : hashedPassword, otp : undefined, otpExpireAt : undefined});
+
+      return{
+        success : true,
+        message : 'Password Updated'
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+
 }
