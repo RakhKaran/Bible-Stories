@@ -16,6 +16,7 @@ import SITE_SETTINGS from '../utils/config';
 import { EmailManagerBindings } from '../keys';
 import { EmailManager } from '../services/email.service';
 import AdminForgotPasswordEmailTemplate from '../templates/adminForgetPassword.template';
+import { FirebaseAdmin } from '../services/firebase.service';
 // import { FirebaseAdmin } from '../services/firebase.service';
 
 // ----------------------------------------------------------------------------
@@ -31,8 +32,8 @@ export class UsersController {
     public jwtService: JWTService,
     @inject(EmailManagerBindings.SEND_MAIL)
     public emailManager: EmailManager,
-    // @inject('service.firebase-admin')
-    // public firebaseAdmin: FirebaseAdmin,
+    @inject('service.firebase-admin')
+    public firebaseAdmin: FirebaseAdmin,
     @repository(UsersRepository)
     public usersRepository: UsersRepository,
   ) {
@@ -219,65 +220,56 @@ export class UsersController {
   // }
 
   // // Verify OTP and Generate Token
-  // @post('/auth/customer-verify-otp', {
-  //   responses: {
-  //     '200': {
-  //       description: 'OTP Verification',
-  //     },
-  //   },
-  // })
-  // async verifyOtp(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: {
-  //           type: 'object',
-  //           properties: {
-  //             phoneNumber: { type: 'string', description: 'Customer phone number' },
-  //             otp: { type: 'string', description: 'OTP code' },
-  //             otpId: { type: 'string', description: 'OTP transaction ID' },
-  //           },
-  //           required: ['phoneNumber', 'otp', 'otpId'],
-  //         },
-  //       },
-  //     },
-  //   })
-  //   body: { phoneNumber: string; otp: string; otpId: string },
-  // ) {
-  //   const { phoneNumber, otp, otpId } = body;
+  @post('/auth/verify-customer', {
+    responses: {
+      '200': {
+        description: 'Customer Verification',
+      },
+    },
+  })
+  async verifyCustomer(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              token: { type: 'string', description: 'firebase returned token' },
+            },
+            required: ['token'],
+          },
+        },
+      },
+    })
+    body: { token : string },
+  ) {
+    const { token } = body;
 
-  //   // Step 1: Verify OTP using Firebase Admin SDK
-  //   try {
-  //     const isVerified = true;
-  //     if (!isVerified) {
-  //       throw new HttpErrors.Unauthorized('Invalid or expired OTP');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error verifying OTP:', error);
-  //     throw new HttpErrors.InternalServerError('OTP verification failed');
-  //   }
+    const firebaseResponse = await this.firebaseAdmin.verifyCustomer(token);
 
-  //   // Step 2: Find the user in the database
-  //   const user = await this.usersRepository.findOne({ where: { phoneNumber } });
+    if(!firebaseResponse){
+      throw new HttpErrors.BadRequest('Invalid token id');
+    }
+    // Step 2: Find the user in the database
+    const user = await this.usersRepository.findOne({ where: { phoneNumber : firebaseResponse.phoneNumber } });
 
-  //   if (!user) {
-  //     throw new HttpErrors.NotFound('User not found');
-  //   }
+    if (!user) {
+      throw new HttpErrors.NotFound('User not found');
+    }
 
-  //   // Step 3: Generate JWT Token
-  //   const userProfile = this.userService.convertToUserProfile(user);
-  //   const token = await this.jwtService.generateToken(userProfile);
+    // Step 3: Generate JWT Token
+    const userProfile = this.userService.convertToUserProfile(user);
+    const jwtToken = await this.jwtService.generateToken(userProfile);
 
-  //   // Step 4: Return user profile and token
-  //   return {
-  //     success: true,
-  //     accessToken: token,
-  //     userData: _.omit(user, 'password'),
-  //     message: 'User successfully logged in',
-  //   };
-  // }
+    // Step 4: Return user profile and token
+    return {
+      success: true,
+      accessToken: jwtToken,
+      userData: _.omit(user, 'password'),
+      message: 'User successfully logged in',
+    };
+  }
   
-
   // Me call to check which user is logged in.
   @get('/auth/me')
   @authenticate('jwt')
@@ -440,7 +432,7 @@ export class UsersController {
 
       const password = user.password;
 
-      const isOldPasswordValid = await this.passwordHasher.comparePassword(password, oldPassword);
+      const isOldPasswordValid = await this.passwordHasher.comparePassword(oldPassword, password);
 
       if(isOldPasswordValid){
         const newHashedPassword = await this.passwordHasher.hashPassword(newPassword);
@@ -542,5 +534,118 @@ export class UsersController {
   }
 
   // opt-match for forget password
-  
+  @post('/reset-password')
+  async resetPassword(
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            properties : {
+              email : {
+                type : 'string',
+                description : 'email to identify user'
+              },
+              otp : {
+                type : 'string',
+                description : 'to verify user'
+              }
+            }
+          }
+        }
+      }
+    }) 
+    requestBody : {
+      email : string;
+      otp : string;
+    }
+  ) : Promise<Object> {
+    try{
+      const { email, otp } = requestBody;
+
+      const userData = await this.usersRepository.findOne({
+        where : {
+          email : email
+        }
+      });
+
+      if(!userData){
+        throw new HttpErrors.BadRequest("User not found");
+      }
+
+      const currentTime = new Date();
+
+      if(currentTime <= new Date(userData.otpExpireAt)){
+        if(userData.otp === otp){
+          return{
+            success : 'true',
+            message : 'User is authenticated'
+          }
+        }else{
+          return{
+            success : 'false',
+            message : 'Invalid otp'
+          }
+        }
+      }else{
+        return{
+          success : false,
+          message : 'otp expired'
+        }
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+  // update new password
+  @patch('/update-new-password')
+  async updateNewPassword(
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            properties : {
+              email : {
+                type : 'string',
+                description : 'email of user'
+              },
+              password : {
+                type : 'string',
+                description : 'new password'
+              }
+            }
+          }
+        }
+      }
+    })
+    requestBody : {
+      email : string;
+      password : string;
+    }
+  ) : Promise<object>{
+    try{
+      const { email, password } = requestBody;
+
+      const userData = await this.usersRepository.findOne({
+        where : {
+          email : email
+        }
+      });
+
+      if(!userData){
+        throw new HttpErrors.BadRequest('User not found');
+      }
+
+      const hashedPassword = await this.passwordHasher.hashPassword(password);
+
+      await this.usersRepository.updateById(userData.id,{password : hashedPassword, otp : undefined, otpExpireAt : undefined});
+
+      return{
+        success : true,
+        message : 'Password Updated'
+      }
+    }catch(error){
+      throw error;
+    }
+  }
 }

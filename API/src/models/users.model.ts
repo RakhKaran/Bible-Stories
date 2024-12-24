@@ -47,13 +47,13 @@ export class Users extends Entity {
 
   @property({
     type : 'string',
-    required : true
+    // required : true
   })
   state : string;
 
   @property({
     type : 'string',
-    required : true,
+    // required : true,
   })
   country : string;
 

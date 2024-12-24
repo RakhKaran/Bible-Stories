@@ -17,6 +17,8 @@ import { PasswordIcon } from 'src/assets/icons';
 // components
 import Iconify from 'src/components/iconify';
 import FormProvider, { RHFTextField } from 'src/components/hook-form';
+import axiosInstance from 'src/utils/axios';
+import { useSnackbar } from 'notistack';
 
 // ----------------------------------------------------------------------
 
@@ -24,6 +26,8 @@ export default function FirebaseForgotPasswordView() {
   const { forgotPassword } = useAuthContext();
 
   const router = useRouter();
+  const { enqueueSnackbar } = useSnackbar();
+
 
   const ForgotPasswordSchema = Yup.object().shape({
     email: Yup.string().required('Email is required').email('Email must be a valid email address'),
@@ -39,20 +43,41 @@ export default function FirebaseForgotPasswordView() {
   });
 
   const {
+    setValue,
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      await forgotPassword?.(data.email);
-
-      const searchParams = new URLSearchParams({ email: data.email }).toString();
-
-      const href = `${paths.auth.firebase.verify}?${searchParams}`;
-      router.push(href);
+      const response = await axiosInstance.post('/forget-password',{email : data.email});
+      if(response?.data?.success){
+        enqueueSnackbar(response?.data?.message, {variant : 'success'});
+        const searchParams = new URLSearchParams({ email: data.email }).toString();
+        const href = `${paths.auth.firebase.verify}?${searchParams}`;
+        router.push(href);
+      }else{
+        enqueueSnackbar(response?.data?.message, {variant : 'error'});
+        setValue('email','');
+      }
     } catch (error) {
-      console.error(error);
+      if (typeof error !== 'string' && error?.error?.statusCode === 500) {
+        enqueueSnackbar('Something went wrong', {
+          variant: 'error',
+        });
+      } else {
+        enqueueSnackbar(
+          // eslint-disable-next-line no-nested-ternary
+          typeof error === 'string'
+            ? error
+            : error?.error?.message
+            ? error?.error?.message
+            : error?.message,
+          {
+            variant: 'error',
+          }
+        );
+      }
     }
   });
 

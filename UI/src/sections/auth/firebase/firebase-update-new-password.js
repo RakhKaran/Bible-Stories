@@ -1,53 +1,42 @@
+/* eslint-disable no-nested-ternary */
+import { useState, useEffect } from 'react';
 import * as Yup from 'yup';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
+import axiosInstance from 'src/utils/axios';
 // @mui
-import LoadingButton from '@mui/lab/LoadingButton';
-import Card from '@mui/material/Card';
+import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-// hooks
-import { useBoolean } from 'src/hooks/use-boolean';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import LoadingButton from '@mui/lab/LoadingButton';
+import { IconButton, InputAdornment, Link } from '@mui/material';
+import { useSnackbar } from 'notistack';
+
 // components
+import FormProvider, { RHFCode, RHFTextField } from 'src/components/hook-form';
+import { EmailInboxIcon } from 'src/assets/icons';
+import { useRouter, useSearchParams } from 'src/routes/hook';
 import Iconify from 'src/components/iconify';
-import { useSnackbar } from 'src/components/snackbar';
-import FormProvider, { RHFTextField } from 'src/components/hook-form';
-import axiosInstance, { endpoints } from 'src/utils/axios';
-import { useEffect, useState } from 'react';
+import { useBoolean } from 'src/hooks/use-boolean';
+import { paths } from 'src/routes/paths';
 
 // ----------------------------------------------------------------------
 
-export default function AccountChangePassword() {
+export default function FirebaseUpdatePassword() {
   const { enqueueSnackbar } = useSnackbar();
+  const router = useRouter();
+
+  const searchParams = useSearchParams();
+
+  const email = searchParams.get('email');
 
   const password = useBoolean();
-  const [user, setUser] = useState();
 
-  const getCurrentUser = async () => {
-    try {
-      const response = await axiosInstance.get(endpoints.auth.me);
-
-      const userData = response.data;
-      setUser(userData);
-    } catch (error) {
-      console.error(error);
-      enqueueSnackbar(typeof error === 'string' ? error : error.error.message, {
-        variant: 'error',
-      });
-    }
-  };
-
-  useEffect(()=>{
-    getCurrentUser();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[])
-
-  const ChangePassWordSchema = Yup.object().shape({
-    oldPassword: Yup.string().required('Old Password is required'),
+  const ChangePasswordSchema = Yup.object().shape({
     newPassword: Yup.string()
       .required('New Password is required')
-      .min(8, 'Password must be at least 6 characters')
+      .min(8, 'Password must be at least 8 characters')
       .test(
         'no-match',
         'New password must be different than old password',
@@ -57,74 +46,64 @@ export default function AccountChangePassword() {
   });
 
   const defaultValues = {
-    oldPassword: '',
     newPassword: '',
     confirmNewPassword: '',
   };
 
   const methods = useForm({
-    resolver: yupResolver(ChangePassWordSchema),
+    resolver: yupResolver(ChangePasswordSchema),
     defaultValues,
   });
 
   const {
-    reset,
+    setValue,
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      const response = await axiosInstance.patch('/update-password',{
-        userId : user.id,
-        oldPassword : data.oldPassword,
-        newPassword : data.newPassword
-      });
+      const response = await axiosInstance.patch('/update-new-password',{email, password : data.newPassword});
       if(response?.data?.success){
         enqueueSnackbar(response?.data?.message, {variant : 'success'});
-        reset();
+        router.replace(paths.auth.firebase.login);
       }else{
-        enqueueSnackbar(response?.data?.message, {variant : 'error'});
+        enqueueSnackbar(response?.data?.message,{variant : 'error'});
+        setValue('newPassword','');
+        setValue('confirmNewPassword', '');
       }
     } catch (error) {
       if (typeof error !== 'string' && error?.error?.statusCode === 500) {
-        enqueueSnackbar('Something went wrong', {
-          variant: 'error',
-        });
+        enqueueSnackbar('Something went wrong', { variant: 'error' });
       } else {
         enqueueSnackbar(
-          // eslint-disable-next-line no-nested-ternary
           typeof error === 'string'
             ? error
             : error?.error?.message
             ? error?.error?.message
             : error?.message,
-          {
-            variant: 'error',
-          }
+          { variant: 'error' }
         );
       }
     }
   });
 
-  return (
-    <FormProvider methods={methods} onSubmit={onSubmit}>
-      <Stack component={Card} spacing={3} sx={{ p: 3 }}>
-        <RHFTextField
-          name="oldPassword"
-          type={password.value ? 'text' : 'password'}
-          label="Old Password"
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={password.onToggle} edge="end">
-                  <Iconify icon={password.value ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
 
+  const renderHead = (
+    <>
+      <EmailInboxIcon sx={{ mb: 5, height: 96 }} />
+      <Typography variant="h3" sx={{ mb: 1 }}>
+        Please check your email!
+      </Typography>
+
+      <Stack spacing={1} sx={{ color: 'text.secondary', typography: 'body2', mb: 5 }}>
+        <Box component="span"> Please Enter New Password To Reset Password</Box>
+      </Stack>
+    </>
+  );
+
+  const renderForm = (
+    <Stack spacing={3} alignItems="center">
         <RHFTextField
           name="newPassword"
           label="New Password"
@@ -141,7 +120,7 @@ export default function AccountChangePassword() {
           helperText={
             <Stack component="span" direction="row" alignItems="center">
               <Iconify icon="eva:info-fill" width={16} sx={{ mr: 0.5 }} /> Password must be minimum
-              6+
+              8+
             </Stack>
           }
         />
@@ -160,11 +139,19 @@ export default function AccountChangePassword() {
             ),
           }}
         />
+      <LoadingButton fullWidth size="large" type="submit" variant="contained" loading={isSubmitting}>
+        Set password
+      </LoadingButton>
+    </Stack>
+  );
 
-        <LoadingButton type="submit" variant="contained" loading={isSubmitting} sx={{ ml: 'auto' }}>
-          Save Changes
-        </LoadingButton>
-      </Stack>
-    </FormProvider>
+  return (
+    <>
+      {renderHead}
+
+      <FormProvider methods={methods} onSubmit={onSubmit}>
+        {renderForm}
+      </FormProvider>
+    </>
   );
 }

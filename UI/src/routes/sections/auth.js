@@ -7,6 +7,8 @@ import CompactLayout from 'src/layouts/compact';
 import AuthClassicLayout from 'src/layouts/auth/classic';
 // components
 import { SplashScreen } from 'src/components/loading-screen';
+import { element } from 'prop-types';
+import FirebaseUpdatePassword from 'src/sections/auth/firebase/firebase-update-new-password';
 
 // ----------------------------------------------------------------------
 
@@ -137,6 +139,7 @@ const authFirebase = {
       ),
       children: [
         { path: 'verify', element: <FirebaseVerifyPage /> },
+        { path: 'update-new-password', element: <FirebaseUpdatePassword />},
         { path: 'forgot-password', element: <FirebaseForgotPasswordPage /> },
       ],
     },
