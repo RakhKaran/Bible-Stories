@@ -24,6 +24,7 @@ import {BcryptHasher} from './services/hash.password.bcrypt';
 import {JWTService} from './services/jwt-service';
 import {MyUserService} from './services/user-service';
 import {EmailService} from './services/email.service';
+import { FirebaseAdmin } from './services/firebase.service';
 import {SyncProductCron} from './services/cronjob.service';
 import {ExcelImportService} from './services/excel-import.service';
 
@@ -71,6 +72,7 @@ export class BibleStoriesApplication extends BootMixin(
     this.bind('service.jwt.service').toClass(JWTService);
     this.bind('service.excel.service').toClass(ExcelImportService);
     this.bind('service.user.service').toClass(MyUserService);
+    this.bind('service.firebase-admin').toClass(FirebaseAdmin);
     this.bind(EmailManagerBindings.SEND_MAIL).toClass(EmailService);
     this.bind('service.cronjob.service').toClass(SyncProductCron);
   }

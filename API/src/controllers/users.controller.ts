@@ -17,7 +17,6 @@ import { EmailManagerBindings } from '../keys';
 import { EmailManager } from '../services/email.service';
 import AdminForgotPasswordEmailTemplate from '../templates/adminForgetPassword.template';
 import { FirebaseAdmin } from '../services/firebase.service';
-// import { FirebaseAdmin } from '../services/firebase.service';
 
 // ----------------------------------------------------------------------------
 export class UsersController {
