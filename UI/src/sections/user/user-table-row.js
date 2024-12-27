@@ -5,7 +5,7 @@ import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
-import Checkbox from '@mui/material/Checkbox';
+// import Checkbox from '@mui/material/Checkbox';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import ListItemText from '@mui/material/ListItemText';
@@ -21,8 +21,10 @@ import UserQuickEditForm from './user-quick-edit-form';
 
 // ----------------------------------------------------------------------
 
-export default function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow }) {
-  const { name, avatarUrl, company, role, status, email, phoneNumber } = row;
+export default function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow, onRefreshUsers }) {
+  const { firstName, lastName,  avatar, email, permissions, isActive, phoneNumber } = row;
+
+  const name = `${firstName || ''} ${lastName || ''}`
 
   const confirm = useBoolean();
 
@@ -30,19 +32,22 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
 
   const popover = usePopover();
 
+  let role = '';
+
+  if(permissions?.includes('listener')){
+    role = 'Listener'
+  }else{
+    role = 'Admin'
+  }
+
   return (
     <>
       <TableRow hover selected={selected}>
-        <TableCell padding="checkbox">
-          <Checkbox checked={selected} onClick={onSelectRow} />
-        </TableCell>
-
-        <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
-          <Avatar alt={name} src={avatarUrl} sx={{ mr: 2 }} />
+        <TableCell sx={{ display: 'flex', alignItems: 'center', whiteSpace:'nowrap' }}>
+          <Avatar alt={name} src={avatar?.fileUrl} sx={{ mr: 2 }} />
 
           <ListItemText
             primary={name}
-            secondary={email}
             primaryTypographyProps={{ typography: 'body2' }}
             secondaryTypographyProps={{ component: 'span', color: 'text.disabled' }}
           />
@@ -50,7 +55,7 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{phoneNumber}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{company}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>{email || 'Not Available'}</TableCell>
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{role}</TableCell>
 
@@ -58,13 +63,10 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
           <Label
             variant="soft"
             color={
-              (status === 'active' && 'success') ||
-              (status === 'pending' && 'warning') ||
-              (status === 'banned' && 'error') ||
-              'default'
-            }
+              (isActive ? 'success' : 'error')
+            }        
           >
-            {status}
+            {isActive ? 'Active' : 'Banned'}
           </Label>
         </TableCell>
 
@@ -75,13 +77,13 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
             </IconButton>
           </Tooltip>
 
-          <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
+          {/* <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
             <Iconify icon="eva:more-vertical-fill" />
-          </IconButton>
+          </IconButton> */}
         </TableCell>
       </TableRow>
 
-      <UserQuickEditForm currentUser={row} open={quickEdit.value} onClose={quickEdit.onFalse} />
+      <UserQuickEditForm currentUser={row} open={quickEdit.value} onClose={quickEdit.onFalse} onRefreshUsers={onRefreshUsers}/>
 
       <CustomPopover
         open={popover.open}
@@ -132,4 +134,5 @@ UserTableRow.propTypes = {
   onSelectRow: PropTypes.func,
   row: PropTypes.object,
   selected: PropTypes.bool,
+  onRefreshUsers: PropTypes.func
 };

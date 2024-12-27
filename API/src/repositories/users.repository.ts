@@ -1,8 +1,9 @@
-import {Constructor, inject} from '@loopback/core';
-import {DefaultCrudRepository} from '@loopback/repository';
+import {Constructor, inject, Getter} from '@loopback/core';
+import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
 import {BibleStoriesDataSource} from '../datasources';
-import {Users, UsersRelations} from '../models';
+import {Users, UsersRelations, Language} from '../models';
 import { TimeStampRepositoryMixin } from '../mixins/timestamp-repository-mixin';
+import {LanguageRepository} from './language.repository';
 
 // export class UsersRepository extends DefaultCrudRepository<
 //   Users,
@@ -28,10 +29,15 @@ Users,
     DefaultCrudRepository<Users, typeof Users.prototype.id, UsersRelations>
   >
 >(DefaultCrudRepository) {
+
+  public readonly audioLanguageRelation: BelongsToAccessor<Language, typeof Users.prototype.id>;
+
   constructor(
-    @inject('datasources.bibleStories') dataSource: BibleStoriesDataSource,
+    @inject('datasources.bibleStories') dataSource: BibleStoriesDataSource, @repository.getter('LanguageRepository') protected languageRepositoryGetter: Getter<LanguageRepository>,
   ) {
     super(Users, dataSource);
+    this.audioLanguageRelation = this.createBelongsToAccessorFor('audioLanguageRelation', languageRepositoryGetter,);
+    this.registerInclusionResolver('audioLanguageRelation', this.audioLanguageRelation.inclusionResolver);
   }
 }
 

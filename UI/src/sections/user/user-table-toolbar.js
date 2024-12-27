@@ -22,6 +22,7 @@ export default function UserTableToolbar({
   onFilters,
   //
   roleOptions,
+  printData,
 }) {
   const popover = usePopover();
 
@@ -114,29 +115,12 @@ export default function UserTableToolbar({
       >
         <MenuItem
           onClick={() => {
+            printData();
             popover.onClose();
           }}
         >
           <Iconify icon="solar:printer-minimalistic-bold" />
           Print
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            popover.onClose();
-          }}
-        >
-          <Iconify icon="solar:import-bold" />
-          Import
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            popover.onClose();
-          }}
-        >
-          <Iconify icon="solar:export-bold" />
-          Export
         </MenuItem>
       </CustomPopover>
     </>
@@ -147,4 +131,5 @@ UserTableToolbar.propTypes = {
   filters: PropTypes.object,
   onFilters: PropTypes.func,
   roleOptions: PropTypes.array,
+  printData: PropTypes.func
 };

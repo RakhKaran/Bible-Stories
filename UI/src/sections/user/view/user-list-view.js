@@ -1,5 +1,7 @@
 import isEqual from 'lodash/isEqual';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import * as XLSX from 'xlsx';
 // @mui
 import { alpha } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
@@ -15,9 +17,6 @@ import TableContainer from '@mui/material/TableContainer';
 // routes
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hook';
-import { RouterLink } from 'src/routes/components';
-// _mock
-import { _userList, _roles, USER_STATUS_OPTIONS } from 'src/_mock';
 // hooks
 import { useBoolean } from 'src/hooks/use-boolean';
 // components
@@ -37,6 +36,8 @@ import {
   TableSelectedAction,
   TablePaginationCustom,
 } from 'src/components/table';
+// api
+import { useGetUsersList } from 'src/api/users-api/users';
 //
 import UserTableRow from '../user-table-row';
 import UserTableToolbar from '../user-table-toolbar';
@@ -44,12 +45,12 @@ import UserTableFiltersResult from '../user-table-filters-result';
 
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, ...USER_STATUS_OPTIONS];
+const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, {value: true, label: 'Active'}, {value: false, label: 'Banned'}];
 
 const TABLE_HEAD = [
   { id: 'name', label: 'Name' },
   { id: 'phoneNumber', label: 'Phone Number', width: 180 },
-  { id: 'company', label: 'Company', width: 220 },
+  { id: 'email', label: 'Email', width: 220 },
   { id: 'role', label: 'Role', width: 180 },
   { id: 'status', label: 'Status', width: 100 },
   { id: '', width: 88 },
@@ -72,9 +73,17 @@ export default function UserListView() {
 
   const confirm = useBoolean();
 
-  const [tableData, setTableData] = useState(_userList);
+  const [tableData, setTableData] = useState([]);
 
   const [filters, setFilters] = useState(defaultFilters);
+
+  const {users, usersEmpty, refreshUsers} = useGetUsersList();
+
+  useEffect(() => {
+    if(users && !usersEmpty){
+      setTableData(users);
+    }
+  },[users, usersEmpty]);
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -143,6 +152,52 @@ export default function UserListView() {
     setFilters(defaultFilters);
   }, []);
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  const printData = () => {
+    const columnNames = [
+      { label: 'Firstname', key: 'firstName' },
+      { label: 'Lastname', key: 'lastName' },
+      { label: 'Phone Number', key: 'phoneNumber' },
+      { label: 'Email', key: 'email' },
+      { label: 'Village', key: 'city' },
+      { label: 'State', key: 'state' },
+      { label: 'Country', key: 'country' },
+      { label: 'Role', key: 'role' },
+      { label: 'Joined At', key: 'createdAt' },
+    ];
+
+    const filteredTableData = [];
+
+    tableData.map((data) => filteredTableData.push({
+      firstName : data.firstName ,
+      lastName : data.lastName ? data.lastName : '',
+      phoneNumber : data.phoneNumber,
+      email : data.email ? data.email : '',
+      city : data.city,
+      state : data.state ? data.state : '',
+      country : data.country ? data.country : '',
+      role : data.permissions?.includes('listener') ? 'Listener' : 'Admin',
+      createdAt : formatDate(data.createdAt),
+      status : data.isActive ? 'Active' : 'Banned',
+    }))
+
+    const excelData = [
+      columnNames.map((col) => col.label), // Add headers
+      ...filteredTableData.map((row) => columnNames.map((col) => row[col.key])), // Map data to keys
+    ];
+
+    const fileName = 'Cluster Management.xlsx';
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Coupon Master');
+    XLSX.writeFile(wb, fileName);
+  };
+
   return (
     <>
       <Container maxWidth={settings.themeStretch ? false : 'lg'}>
@@ -153,16 +208,16 @@ export default function UserListView() {
             { name: 'User', href: paths.dashboard.user.root },
             { name: 'List' },
           ]}
-          action={
-            <Button
-              component={RouterLink}
-              href={paths.dashboard.user.new}
-              variant="contained"
-              startIcon={<Iconify icon="mingcute:add-line" />}
-            >
-              New User
-            </Button>
-          }
+          // action={
+          //   <Button
+          //     component={RouterLink}
+          //     href={paths.dashboard.user.new}
+          //     variant="contained"
+          //     startIcon={<Iconify icon="mingcute:add-line" />}
+          //   >
+          //     New User
+          //   </Button>
+          // }
           sx={{
             mb: { xs: 3, md: 5 },
           }}
@@ -188,23 +243,13 @@ export default function UserListView() {
                     variant={
                       ((tab.value === 'all' || tab.value === filters.status) && 'filled') || 'soft'
                     }
-                    color={
-                      (tab.value === 'active' && 'success') ||
-                      (tab.value === 'pending' && 'warning') ||
-                      (tab.value === 'banned' && 'error') ||
-                      'default'
-                    }
+                    color={(tab.value ? 'success' : 'error') || 'default'}
                   >
-                    {tab.value === 'all' && _userList.length}
-                    {tab.value === 'active' &&
-                      _userList.filter((user) => user.status === 'active').length}
-
-                    {tab.value === 'pending' &&
-                      _userList.filter((user) => user.status === 'pending').length}
-                    {tab.value === 'banned' &&
-                      _userList.filter((user) => user.status === 'banned').length}
-                    {tab.value === 'rejected' &&
-                      _userList.filter((user) => user.status === 'rejected').length}
+                    {tab.value === 'all' && tableData.length}
+                    {tab.value === true &&
+                      tableData.filter((user) => user.isActive === true).length}
+                    {tab.value === false &&
+                      tableData.filter((user) => user.isActive === false).length}
                   </Label>
                 }
               />
@@ -215,7 +260,8 @@ export default function UserListView() {
             filters={filters}
             onFilters={handleFilters}
             //
-            roleOptions={_roles}
+            roleOptions={["admin", "listener"]}
+            printData={() => printData()}
           />
 
           {canReset && (
@@ -265,6 +311,7 @@ export default function UserListView() {
                       tableData.map((row) => row.id)
                     )
                   }
+                  checkBoxDisabled
                 />
 
                 <TableBody>
@@ -281,6 +328,7 @@ export default function UserListView() {
                         onSelectRow={() => table.onSelectRow(row.id)}
                         onDeleteRow={() => handleDeleteRow(row.id)}
                         onEditRow={() => handleEditRow(row.id)}
+                        onRefreshUsers={() => refreshUsers()}
                       />
                     ))}
 
@@ -351,7 +399,7 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (user) => user.name.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (user) => user.firstName.toLowerCase().indexOf(name.toLowerCase()) !== -1
     );
   }
 
@@ -360,8 +408,8 @@ function applyFilter({ inputData, comparator, filters }) {
   }
 
   if (role.length) {
-    inputData = inputData.filter((user) => role.includes(user.role));
+    inputData = inputData.filter((user) => role.some((r) => user.permissions.includes(r)));
   }
-
+  
   return inputData;
 }

@@ -50,4 +50,16 @@ export const endpoints = {
     details: '/api/product/details',
     search: '/api/product/search',
   },
+  users: {
+    list: '/users',
+    details: (userId) => `/users/${userId}`
+  },
+  languages: {
+    list: '/fetch-languages',
+    details: (languageId) => `/fetch-languages/${languageId}`
+  },
+  categories: {
+    list: '/categories',
+    details: (categoryId) => `/categories/${categoryId}`
+  }
 };

@@ -1,4 +1,5 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {Language} from './language.model';
 
 @model()
 export class Users extends Entity {
@@ -10,15 +11,15 @@ export class Users extends Entity {
   id?: number;
 
   @property({
-    type : 'string',
-    required : true,
+    type: 'string',
+    required: true,
   })
-  firstName : string;
+  firstName: string;
 
   @property({
-    type : 'string',
+    type: 'string',
   })
-  lastName : string;
+  lastName: string;
 
   @property({
     type: 'string',
@@ -40,22 +41,22 @@ export class Users extends Entity {
   password: string;
 
   @property({
-    type : 'string',
-    required : true
+    type: 'string',
+    required: true
   })
-  city : string;
+  city: string;
 
   @property({
-    type : 'string',
+    type: 'string',
     // required : true
   })
-  state : string;
+  state: string;
 
   @property({
-    type : 'string',
+    type: 'string',
     // required : true,
   })
-  country : string;
+  country: string;
 
   @property({
     type: 'object',
@@ -67,6 +68,26 @@ export class Users extends Entity {
     itemType: 'string', // This should be an array of strings
   })
   permissions: string[];
+
+  @property({
+    type: 'string'
+  })
+  appLanguage: string;
+
+  @belongsTo(() => Language, {name: 'audioLanguageRelation'})
+  audioLanguage: number;
+
+  @property({
+    type: 'boolean',
+    default: true
+  })
+  isAllowingPushNotifications: boolean;
+
+  @property({
+    type: 'boolean',
+    default: true
+  })
+  isAllowingAutoplay: boolean;
 
   @property({
     type: 'boolean',

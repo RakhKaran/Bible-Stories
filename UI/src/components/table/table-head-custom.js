@@ -31,12 +31,13 @@ export default function TableHeadCustom({
   numSelected = 0,
   onSort,
   onSelectAllRows,
+  checkBoxDisabled,
   sx,
 }) {
   return (
     <TableHead sx={sx}>
       <TableRow>
-        {onSelectAllRows && (
+        {onSelectAllRows && !checkBoxDisabled && (
           <TableCell padding="checkbox">
             <Checkbox
               indeterminate={!!numSelected && numSelected < rowCount}
@@ -87,4 +88,5 @@ TableHeadCustom.propTypes = {
   numSelected: PropTypes.number,
   onSelectAllRows: PropTypes.func,
   order: PropTypes.oneOf(['asc', 'desc']),
+  checkBoxDisabled: PropTypes.bool
 };

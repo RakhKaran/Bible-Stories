@@ -48,6 +48,8 @@ export class MyUserService implements UserService<Users, Credentials> {
       phoneNumber:user.phoneNumber,
       [securityId]: `${user.id}`,
       permissions: user.permissions,
+      appLanguage: user?.appLanguage,
+      audioLanguage: user?.audioLanguage
     };
   }
 }

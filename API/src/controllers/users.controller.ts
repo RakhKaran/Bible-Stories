@@ -39,6 +39,31 @@ export class UsersController {
     this.passwordHasher = new BcryptHasher();
   }
 
+  // Me call to check which user is logged in.
+  @get('/auth/me')
+  @authenticate('jwt')
+  async whoAmI(
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
+  ): Promise<any> {
+    const user = await this.usersRepository.findOne({
+      where: {
+        id: currentUser.id,
+      },
+    });
+
+    if (!user) {
+      throw new HttpErrors.NotFound('User not found');
+    }
+
+    const userData = _.omit(user, 'password');
+    return {
+      ...userData,
+      displayName: `${userData.firstName} ${userData.lastName}`,
+    };
+  }
+
+  // registration api's
+
   // User registration API.
   @post('/auth/register', {
     responses: {
@@ -107,6 +132,8 @@ export class UsersController {
     }
   }
 
+  // admin authentication api's
+
   // Admin login authentication API using email and password.
   @post('/auth/admin-login')
   async adminLogin(
@@ -166,286 +193,6 @@ export class UsersController {
         console.error('Unexpected error during login:', error); // Log the unexpected error
         throw new HttpErrors.InternalServerError('An error occurred during login');
       }
-    }
-  }
-
-  // Admin login authentication API using email and password.
-  @post('/auth/customer-login')
-  async customerLogin(
-    @requestBody({
-      description: 'Login with phone number for customer',
-      required: true,
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              phoneNumber: { type: 'string', description: 'Customer Login' },
-              password: { type: 'string', description: 'Customer password' },
-            },
-          },
-        },
-      },
-    })
-    requestBody: { phoneNumber: string; password: string },
-  ): Promise<any> {
-    try {
-      const { phoneNumber, password } = requestBody;
-  
-      // Find user by email
-      const user = await this.usersRepository.findOne({ where: { phoneNumber } });
-      if (!user) {
-        throw new HttpErrors.BadRequest('Phone number does not exist');
-      }
-  
-      // Check if the user is active
-      if (!user.isActive) {
-        throw new HttpErrors.BadRequest('User is not active');
-      }
-  
-      // Compare password
-      const passwordMatch = await this.passwordHasher.comparePassword(password, user.password);
-      if (passwordMatch) {
-        // Generate JWT token and return user data
-        const userProfile = this.userService.convertToUserProfile(user);
-        const userData = _.omit(userProfile, 'password'); // Omit the password field
-        const token = await this.jwtService.generateToken(userProfile);
-        return {
-          success: true,
-          accessToken: token,
-          userData,
-          message: 'User is successfully logged in.',
-        };
-      } else {
-        throw new HttpErrors.BadRequest('Invalid credentials');
-      }
-    } catch (error) {
-      if (error instanceof HttpErrors.HttpError) {
-        // If the error is a known HttpError, return it as is
-        throw error;
-      } else {
-        // Otherwise, throw an internal server error
-        console.error('Unexpected error during login:', error); // Log the unexpected error
-        throw new HttpErrors.InternalServerError('An error occurred during login');
-      }
-    }
-  }
-  
-  // // customer otp send
-  // @post('/auth/customer-otp-login', {
-  //   responses: {
-  //     '200': {
-  //       description: 'Customer Login',
-  //     },
-  //   },
-  // })
-  // async customerLogin(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: {
-  //           type: 'object',
-  //           properties: {
-  //             phoneNumber: { type: 'string', description: 'Customer phone number' },
-  //           },
-  //           required: ['phoneNumber'],
-  //         },
-  //       },
-  //     },
-  //   })
-  //   body: { phoneNumber: string },
-  // ) {
-  //   const { phoneNumber } = body;
-
-  //   // Step 1: Verify the phone number in the database
-  //   const existingUser = await this.usersRepository.findOne({
-  //     where: { phoneNumber },
-  //   });
-
-  //   if (!existingUser) {
-  //     throw new HttpErrors.NotFound('Phone number is not registered');
-  //   }
-
-  //   // Step 2: Send OTP using Firebase Admin SDK
-  //   try {
-  //     const otp = await this.firebaseAdmin.sendOtp(phoneNumber);
-  //     return {
-  //       success: true,
-  //       message: 'OTP sent successfully',
-  //       otpId: otp, // Store this on the client to track verification
-  //     };
-  //   } catch (error) {
-  //     console.error('Error sending OTP:', error);
-  //     throw new HttpErrors.InternalServerError('Failed to send OTP');
-  //   }
-  // }
-
-  // // Verify OTP and Generate Token
-  @post('/auth/verify-customer', {
-    responses: {
-      '200': {
-        description: 'Customer Verification',
-      },
-    },
-  })
-  async verifyCustomer(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              token: { type: 'string', description: 'firebase returned token' },
-            },
-            required: ['token'],
-          },
-        },
-      },
-    })
-    body: { token : string },
-  ) {
-    const { token } = body;
-
-    const firebaseResponse = await this.firebaseAdmin.verifyCustomer(token);
-
-    if(!firebaseResponse){
-      throw new HttpErrors.BadRequest('Invalid token id');
-    }
-    // Step 2: Find the user in the database
-    const user = await this.usersRepository.findOne({ where: { phoneNumber : firebaseResponse.phoneNumber } });
-
-    if (!user) {
-      throw new HttpErrors.NotFound('User not found');
-    }
-
-    // Step 3: Generate JWT Token
-    const userProfile = this.userService.convertToUserProfile(user);
-    const jwtToken = await this.jwtService.generateToken(userProfile);
-
-    // Step 4: Return user profile and token
-    return {
-      success: true,
-      accessToken: jwtToken,
-      userData: _.omit(user, 'password'),
-      message: 'User successfully logged in',
-    };
-  }
-  
-  // Me call to check which user is logged in.
-  @get('/auth/me')
-  @authenticate('jwt')
-  async whoAmI(
-    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
-  ): Promise<any> {
-    const user = await this.usersRepository.findOne({
-      where: {
-        id: currentUser.id,
-      },
-    });
-
-    if (!user) {
-      throw new HttpErrors.NotFound('User not found');
-    }
-
-    const userData = _.omit(user, 'password');
-    return {
-      ...userData,
-      displayName: `${userData.firstName} ${userData.lastName}`,
-    };
-  }
-
-  // update user profile
-  @patch('/update-profile/{userId}')
-  async updateProfile(
-    @param.path.number('userId') userId : number,
-    @requestBody({
-      content : {
-        'application/json': {
-          schema: getModelSchemaRef(Users, {
-            exclude: ['id'],
-          }),
-        },
-      }
-    })
-    userData : Omit<Users, 'id'>
-  ) : Promise<object>{
-    try{
-      const user = await this.usersRepository.findById(userId);
-
-      if(!user){
-        throw new HttpErrors.BadRequest(`User with id ${userId} dont exist`);
-      }
-
-      if(user && !user.isActive){
-        throw new HttpErrors.BadRequest('User is not active');
-      }
-
-      await this.usersRepository.updateById(user.id, userData);
-
-      return{
-        success : true,
-        message : 'User Updated'
-      }
-    }catch(error){
-      throw error;
-    }
-  }
-
-  // get user by id
-  @authenticate({
-    strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN]},
-  }) 
-  @get('/user/{userId}')
-  async fetchUserById(
-    @param.path.number('userId') userId : number,
-  ) : Promise<Object>{
-    try{
-      const user = await this.usersRepository.findById(userId);
-
-      if(!user){
-        throw new HttpErrors.BadRequest(`User with id ${userId} dont exist`);
-      }
-
-      if(user && !user.isActive){
-        throw new HttpErrors.BadRequest('User is not active');
-      }
-
-      return{
-        success : true,
-        message : "User Data",
-        data : user
-      }
-    }catch(error){
-      throw error;
-    }
-  }
-
-  // fetch all user data
-  @authenticate({
-    strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN]},
-  })  
-  @get('/users')
-  async fetchUsers(
-  ) : Promise<object>{
-    try{
-      const users = await this.usersRepository.find();
-
-      if(users.length <= 0){
-        return{
-          success : false,
-          message : 'No users data found'
-        }
-      }
-
-      return{
-        success : true,
-        message : 'Users Data',
-        data : users
-      }
-    }catch(error){
-      throw error;
     }
   }
 
@@ -710,6 +457,121 @@ export class UsersController {
     }
   }
 
+  // customer authentication api's
+
+  // customer login authentication API using phone number and password.
+  @post('/auth/customer-login')
+  async customerLogin(
+    @requestBody({
+      description: 'Login with phone number for customer',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              phoneNumber: { type: 'string', description: 'Customer Login' },
+              password: { type: 'string', description: 'Customer password' },
+            },
+          },
+        },
+      },
+    })
+    requestBody: { phoneNumber: string; password: string },
+  ): Promise<any> {
+    try {
+      const { phoneNumber, password } = requestBody;
+  
+      // Find user by email
+      const user = await this.usersRepository.findOne({ where: { phoneNumber } });
+      if (!user) {
+        throw new HttpErrors.BadRequest('Phone number does not exist');
+      }
+  
+      // Check if the user is active
+      if (!user.isActive) {
+        throw new HttpErrors.BadRequest('User is not active');
+      }
+  
+      // Compare password
+      const passwordMatch = await this.passwordHasher.comparePassword(password, user.password);
+      if (passwordMatch) {
+        // Generate JWT token and return user data
+        const userProfile = this.userService.convertToUserProfile(user);
+        const userData = _.omit(userProfile, 'password'); // Omit the password field
+        const token = await this.jwtService.generateToken(userProfile);
+        return {
+          success: true,
+          accessToken: token,
+          userData,
+          message: 'User is successfully logged in.',
+        };
+      } else {
+        throw new HttpErrors.BadRequest('Invalid credentials');
+      }
+    } catch (error) {
+      if (error instanceof HttpErrors.HttpError) {
+        // If the error is a known HttpError, return it as is
+        throw error;
+      } else {
+        // Otherwise, throw an internal server error
+        console.error('Unexpected error during login:', error); // Log the unexpected error
+        throw new HttpErrors.InternalServerError('An error occurred during login');
+      }
+    }
+  }
+
+  // Verify OTP and Generate Token
+  @post('/auth/verify-customer', {
+    responses: {
+      '200': {
+        description: 'Customer Verification',
+      },
+    },
+  })
+  async verifyCustomer(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              token: { type: 'string', description: 'firebase returned token' },
+            },
+            required: ['token'],
+          },
+        },
+      },
+    })
+    body: { token : string },
+  ) {
+    const { token } = body;
+
+    const firebaseResponse = await this.firebaseAdmin.verifyCustomer(token);
+
+    if(!firebaseResponse){
+      throw new HttpErrors.BadRequest('Invalid token id');
+    }
+    // Step 2: Find the user in the database
+    const user = await this.usersRepository.findOne({ where: { phoneNumber : firebaseResponse.phoneNumber } });
+
+    if (!user) {
+      throw new HttpErrors.NotFound('User not found');
+    }
+
+    // Step 3: Generate JWT Token
+    const userProfile = this.userService.convertToUserProfile(user);
+    const jwtToken = await this.jwtService.generateToken(userProfile);
+
+    // Step 4: Return user profile and token
+    return {
+      success: true,
+      accessToken: jwtToken,
+      userData: _.omit(user, 'password'),
+      message: 'User successfully logged in',
+    };
+  }
+
   // update new password
   @patch('/customer/update-new-password')
   async customerUpdateNewPassword(
@@ -762,5 +624,247 @@ export class UsersController {
     }
   }
 
+  // users api's
+
+  // update user profile
+  @patch('/update-profile/{userId}')
+  async updateProfile(
+    @param.path.number('userId') userId : number,
+    @requestBody({
+      content : {
+        'application/json': {
+          schema: getModelSchemaRef(Users, {
+            exclude: ['id'],
+          }),
+        },
+      }
+    })
+    userData : Omit<Users, 'id'>
+  ) : Promise<object>{
+    try{
+      const user = await this.usersRepository.findById(userId);
+
+      if(!user){
+        throw new HttpErrors.BadRequest(`User with id ${userId} dont exist`);
+      }
+
+      await this.usersRepository.updateById(user.id, userData);
+
+      return{
+        success : true,
+        message : 'User Updated'
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+  // get user by id
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN]},
+  }) 
+  @get('/users/{userId}')
+  async fetchUserById(
+    @param.path.number('userId') userId : number,
+  ) : Promise<Object>{
+    try{
+      const user = await this.usersRepository.findById(userId);
+
+      if(!user){
+        throw new HttpErrors.BadRequest(`User with id ${userId} dont exist`);
+      }
+
+      if(user && !user.isActive){
+        throw new HttpErrors.BadRequest('User is not active');
+      }
+
+      return{
+        success : true,
+        message : "User Data",
+        data : user
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+  // fetch all user data
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN]},
+  })  
+  @get('/users')
+  async fetchUsers(
+  ) : Promise<object>{
+    try{
+      const users = await this.usersRepository.find();
+
+      if(users.length <= 0){
+        return{
+          success : false,
+          message : 'No users data found'
+        }
+      }
+
+      return{
+        success : true,
+        message : 'Users Data',
+        data : users
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+  // setting app language
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+  })
+  @post('/users/set-lang')
+  async setAppLanguage(
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            type : 'object',
+            properties : {
+              appLanguage : {
+                type: 'string',
+                description: 'app language for app'
+              },
+              audioLanguage : {
+                type: 'number',
+                description: 'Users Preffered audio language'
+              }
+            }
+          }
+        }
+      }
+     })
+     requestBody : {
+      appLanguage : string;
+      audioLanguage : number;
+     }
+  ) : Promise<{ success : boolean, message : string }>{
+    try{
+      const { appLanguage, audioLanguage } = requestBody; 
+      const userData = await this.usersRepository.findById(currentUser.id);
+
+      if(!userData){
+        throw new HttpErrors.BadRequest('User not found');
+      }
+
+      await this.usersRepository.updateById(currentUser.id, {
+        appLanguage : appLanguage ? appLanguage : userData.appLanguage,
+        audioLanguage : audioLanguage ? audioLanguage : userData.audioLanguage
+      });
+
+      return{
+        success : true,
+        message : 'Language set successfully',
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+  // push notification toggle api
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+  })
+  @post('/users/set-push-notification')
+  async setPushNotifications(
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            type : 'object',
+            properties : {
+              pushNotification : {
+                type: 'boolean',
+                description: 'push notification for app'
+              },
+            }
+          }
+        }
+      }
+     })
+     requestBody : {
+      pushNotification : boolean;
+     }
+  ) : Promise<{success : boolean, message : string}>{
+    try{
+      const { pushNotification } = requestBody; 
+      const userData = await this.usersRepository.findById(currentUser.id);
+
+      if(!userData){
+        throw new HttpErrors.BadRequest('User not found');
+      }
+
+      await this.usersRepository.updateById(currentUser.id, {
+        isAllowingPushNotifications : pushNotification ? pushNotification : userData.isAllowingPushNotifications,
+      });
+
+      return{
+        success : true,
+        message : 'Push Notification set successfully',
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+  // Autoplay toggle api
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+  })
+  @post('/users/set-autoplay')
+  async setAutoplay(
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            type : 'object',
+            properties : {
+              autoplay : {
+                type: 'boolean',
+                description: 'autoplay for app'
+              },
+            }
+          }
+        }
+      }
+     })
+     requestBody : {
+      autoplay : boolean;
+     }
+  ) : Promise<{success : boolean, message : string}>{
+    try{
+      const { autoplay } = requestBody; 
+      const userData = await this.usersRepository.findById(currentUser.id);
+
+      if(!userData){
+        throw new HttpErrors.BadRequest('User not found');
+      }
+
+      await this.usersRepository.updateById(currentUser.id, {
+        isAllowingAutoplay : autoplay ? autoplay : userData.isAllowingAutoplay,
+      });
+
+      return{
+        success : true,
+        message : 'Autoplay set successfully',
+      }
+    }catch(error){
+      throw error;
+    }
+  }
 
 }

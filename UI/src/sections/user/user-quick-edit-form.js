@@ -1,57 +1,52 @@
 import PropTypes from 'prop-types';
 import * as Yup from 'yup';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import LoadingButton from '@mui/lab/LoadingButton';
 import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import MenuItem from '@mui/material/MenuItem';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-// _mock
-import { USER_STATUS_OPTIONS } from 'src/_mock';
 // assets
 import { countries } from 'src/assets/data';
 // components
 import Iconify from 'src/components/iconify';
 import { useSnackbar } from 'src/components/snackbar';
 import FormProvider, { RHFSelect, RHFTextField, RHFAutocomplete } from 'src/components/hook-form';
+import axiosInstance from 'src/utils/axios';
 
 // ----------------------------------------------------------------------
 
-export default function UserQuickEditForm({ currentUser, open, onClose }) {
+export default function UserQuickEditForm({ currentUser, open, onClose, onRefreshUsers }) {
   const { enqueueSnackbar } = useSnackbar();
 
   const NewUserSchema = Yup.object().shape({
-    name: Yup.string().required('Name is required'),
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
+    firstName: Yup.string().required('Name is required'),
+    lastName: Yup.string(),
+    email: Yup.string().email('Email must be a valid email address'),
     phoneNumber: Yup.string().required('Phone number is required'),
-    address: Yup.string().required('Address is required'),
-    country: Yup.string().required('Country is required'),
-    company: Yup.string().required('Company is required'),
-    state: Yup.string().required('State is required'),
+    country: Yup.string(),
+    state: Yup.string(),
     city: Yup.string().required('City is required'),
     role: Yup.string().required('Role is required'),
   });
 
   const defaultValues = useMemo(
     () => ({
-      name: currentUser?.name || '',
+      firstName: currentUser?.firstName || '',
+      lastName: currentUser?.lastName || '',
       email: currentUser?.email || '',
       phoneNumber: currentUser?.phoneNumber || '',
-      address: currentUser?.address || '',
       country: currentUser?.country || '',
       state: currentUser?.state || '',
       city: currentUser?.city || '',
-      zipCode: currentUser?.zipCode || '',
-      status: currentUser?.status,
-      company: currentUser?.company || '',
-      role: currentUser?.role || '',
+      status: currentUser?.isActive,
+      role: currentUser?.permissions?.includes('listener') ? 'listener' : 'admin',
     }),
     [currentUser]
   );
@@ -67,13 +62,33 @@ export default function UserQuickEditForm({ currentUser, open, onClose }) {
     formState: { isSubmitting },
   } = methods;
 
+  useEffect(() => {
+    if (open) {
+      reset(defaultValues); // Reset form values to the latest currentUser values
+    }
+  }, [open, currentUser, reset, defaultValues]);
+
   const onSubmit = handleSubmit(async (data) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      reset();
-      onClose();
-      enqueueSnackbar('Update success!');
-      console.info('DATA', data);
+      const inputData = {
+        firstName : data.firstName,
+        lastName : data.lastName,
+        phoneNumber : data.phoneNumber,
+        email : data.email,
+        city : data.city,
+        state : data.state,
+        country : data.country,
+        permissions : data.role === 'listener' ? ["listener"] : ["admin"],
+        isActive : data.status
+      }
+
+      const response = await axiosInstance.patch(`/update-profile/${currentUser?.id}`, inputData);
+      if(response?.data?.success){
+        reset();
+        onRefreshUsers();
+        onClose();
+        enqueueSnackbar('Update success!');
+      }
     } catch (error) {
       console.error(error);
     }
@@ -93,11 +108,8 @@ export default function UserQuickEditForm({ currentUser, open, onClose }) {
         <DialogTitle>Quick Update</DialogTitle>
 
         <DialogContent>
-          <Alert variant="outlined" severity="info" sx={{ mb: 3 }}>
-            Account is waiting for confirmation
-          </Alert>
-
           <Box
+            sx={{marginTop : '8px'}}
             rowGap={3}
             columnGap={2}
             display="grid"
@@ -107,16 +119,18 @@ export default function UserQuickEditForm({ currentUser, open, onClose }) {
             }}
           >
             <RHFSelect name="status" label="Status">
-              {USER_STATUS_OPTIONS.map((status) => (
-                <MenuItem key={status.value} value={status.value}>
-                  {status.label}
-                </MenuItem>
-              ))}
+              <MenuItem value>
+                Active
+              </MenuItem>
+              <MenuItem value={false}>
+                Banned
+              </MenuItem>
             </RHFSelect>
 
             <Box sx={{ display: { xs: 'none', sm: 'block' } }} />
 
-            <RHFTextField name="name" label="Full Name" />
+            <RHFTextField name="firstName" label="Firstname" />
+            <RHFTextField name="lastName" label="Lastname" />
             <RHFTextField name="email" label="Email Address" />
             <RHFTextField name="phoneNumber" label="Phone Number" />
 
@@ -149,11 +163,18 @@ export default function UserQuickEditForm({ currentUser, open, onClose }) {
             />
 
             <RHFTextField name="state" label="State/Region" />
-            <RHFTextField name="city" label="City" />
-            <RHFTextField name="address" label="Address" />
-            <RHFTextField name="zipCode" label="Zip/Code" />
-            <RHFTextField name="company" label="Company" />
-            <RHFTextField name="role" label="Role" />
+            <RHFTextField name="city" label="Village" />
+            {/* <RHFTextField name="address" label="Address" /> */}
+            {/* <RHFTextField name="zipCode" label="Zip/Code" /> */}
+            {/* <RHFTextField name="company" label="Company" /> */}
+            <RHFSelect name="role" label="Role">
+              <MenuItem value='admin'>
+                Admin
+              </MenuItem>
+              <MenuItem value='listener'>
+                Listener
+              </MenuItem>
+            </RHFSelect>
           </Box>
         </DialogContent>
 
@@ -175,4 +196,5 @@ UserQuickEditForm.propTypes = {
   currentUser: PropTypes.object,
   onClose: PropTypes.func,
   open: PropTypes.bool,
+  onRefreshUsers: PropTypes.func
 };

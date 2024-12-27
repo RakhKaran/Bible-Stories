@@ -4,6 +4,8 @@ import { get, getJsonSchemaRef, getModelSchemaRef, param, patch, post, requestBo
 import { Language } from "../models";
 import { BibleStoriesDataSource } from "../datasources";
 import { inject } from "@loopback/core";
+import { authenticate } from "@loopback/authentication";
+import { PermissionKeys } from "../authorization/permission-keys";
 
 export class LanguageController {
   constructor(
@@ -14,6 +16,10 @@ export class LanguageController {
   ) {}
 
   // create language
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN]},
+  })
   @post('/create-language', {
     responses: {
       '200': {
@@ -24,7 +30,6 @@ export class LanguageController {
       },
     },
   })
-
   async createLanguage(
     @requestBody({
       content: {
@@ -54,6 +59,10 @@ export class LanguageController {
   }
 
   // update language
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN]},
+  })
   @patch('/update-language/{languageId}')
   async updateLanguageById(
     @param.path.number('languageId') langId : number,
@@ -112,7 +121,7 @@ export class LanguageController {
   }
 
   // fetch language by id
-  @get('/fetch-language/{languageId}')
+  @get('/fetch-languages/{languageId}')
   async fetchLanguageById(
     @param.path.number('languageId') langId : number
   ) : Promise<object>{
@@ -135,7 +144,5 @@ export class LanguageController {
       throw error;
     }
   }
-
-  
 
 }
