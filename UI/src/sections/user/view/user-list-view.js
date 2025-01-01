@@ -173,7 +173,10 @@ export default function UserListView() {
 
     const filteredTableData = [];
 
-    tableData.map((data) => filteredTableData.push({
+    // eslint-disable-next-line array-callback-return
+    tableData.map((data) => {
+      if(data.permissions?.includes('listener')){
+      filteredTableData.push({
       firstName : data.firstName ,
       lastName : data.lastName ? data.lastName : '',
       phoneNumber : data.phoneNumber,
@@ -184,14 +187,15 @@ export default function UserListView() {
       role : data.permissions?.includes('listener') ? 'Listener' : 'Admin',
       createdAt : formatDate(data.createdAt),
       status : data.isActive ? 'Active' : 'Banned',
-    }))
+    })}
+  })
 
     const excelData = [
       columnNames.map((col) => col.label), // Add headers
       ...filteredTableData.map((row) => columnNames.map((col) => row[col.key])), // Map data to keys
     ];
 
-    const fileName = 'Cluster Management.xlsx';
+    const fileName = 'Listners.xlsx';
     const ws = XLSX.utils.aoa_to_sheet(excelData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Coupon Master');

@@ -17,12 +17,12 @@ import { useSettingsContext } from 'src/components/settings';
 //
 import { HEADER, NAV } from '../config-layout';
 import {
-  Searchbar,
+  // Searchbar,
   AccountPopover,
-  SettingsButton,
-  LanguagePopover,
-  ContactsPopover,
-  NotificationsPopover,
+  // SettingsButton,
+  // LanguagePopover,
+  // ContactsPopover,
+  // NotificationsPopover,
 } from '../_common';
 
 // ----------------------------------------------------------------------
@@ -61,7 +61,7 @@ export default function Header({ onOpenNav }) {
         justifyContent="flex-end"
         spacing={{ xs: 0.5, sm: 1 }}
       >
-        <LanguagePopover />
+        {/* <LanguagePopover /> */}
 
         {/* <NotificationsPopover />
 

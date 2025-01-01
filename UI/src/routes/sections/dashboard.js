@@ -62,7 +62,15 @@ const KanbanPage = lazy(() => import('src/pages/dashboard/kanban'));
 const PermissionDeniedPage = lazy(() => import('src/pages/dashboard/permission'));
 // BLANK PAGE
 const BlankPage = lazy(() => import('src/pages/dashboard/blank'));
-
+// LANGUAGE PAGES
+const LanguageListPage = lazy(() => import('src/pages/dashboard/languages/list-page'))
+const NewLanguagePage = lazy(() => import('src/pages/dashboard/languages/new-language-page'));
+// CATEGORY PAGES
+const CategoryListPage = lazy(() => import('src/pages/dashboard/categories/list-page'));
+const CategoryCreatePage = lazy(() => import('src/pages/dashboard/categories/new-category-page'));
+// STORIES PAGES
+const StoryListPage = lazy(() => import('src/pages/dashboard/stories/list-page'));
+const StoryCreatePage = lazy(() => import('src/pages/dashboard/stories/new-story-page'));
 // ----------------------------------------------------------------------
 
 export const dashboardRoutes = [
@@ -84,6 +92,8 @@ export const dashboardRoutes = [
       { path: 'banking', element: <OverviewBankingPage /> },
       { path: 'booking', element: <OverviewBookingPage /> },
       { path: 'file', element: <OverviewFilePage /> },
+      
+      // users...
       {
         path: 'user',
         children: [
@@ -96,6 +106,37 @@ export const dashboardRoutes = [
           { path: 'account', element: <UserAccountPage /> },
         ],
       },
+
+      // languages...
+      {
+        path: 'language',
+        children: [
+          { element: <LanguageListPage />, index: true },
+          { path: 'list', element: <LanguageListPage /> },
+          { path: 'new', element: <NewLanguagePage /> },
+        ],
+      },
+
+       // categories...
+       {
+        path: 'category',
+        children: [
+          { element: <CategoryListPage />, index: true },
+          { path: 'list', element: <CategoryListPage /> },
+          { path: 'new', element: <CategoryCreatePage /> },
+        ],
+      },
+
+       // stories...
+       {
+        path: 'story',
+        children: [
+          { element: <StoryListPage />, index: true },
+          { path: 'list', element: <StoryListPage /> },
+          { path: 'new', element: <StoryCreatePage /> },
+        ],
+      },
+      
       {
         path: 'product',
         children: [

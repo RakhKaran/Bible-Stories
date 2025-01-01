@@ -3,7 +3,7 @@ import { useFormContext, Controller } from 'react-hook-form';
 // @mui
 import FormHelperText from '@mui/material/FormHelperText';
 //
-import { UploadAvatar, Upload, UploadBox } from '../upload';
+import { UploadAvatar, Upload, UploadBox, UploadAudio } from '../upload';
 
 // ----------------------------------------------------------------------
 
@@ -99,6 +99,57 @@ export function RHFUpload({ name, multiple, helperText, ...other }) {
 }
 
 RHFUpload.propTypes = {
+  helperText: PropTypes.string,
+  multiple: PropTypes.bool,
+  name: PropTypes.string,
+};
+
+// ----------------------------------------------------------------------------------------------------------
+
+export function RHFUploadAudio({ name, multiple, helperText, ...other }) {
+  const { control } = useFormContext();
+
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field, fieldState: { error } }) =>
+        multiple ? (
+          <UploadAudio
+            multiple
+            accept={{ 'audio/*': [] }}
+            files={field.value}
+            error={!!error}
+            helperText={
+              (!!error || helperText) && (
+                <FormHelperText error={!!error} sx={{ px: 2 }}>
+                  {error ? error?.message : helperText}
+                </FormHelperText>
+              )
+            }
+            {...other}
+          />
+        ) : (
+          <UploadAudio
+            accept={{ 'audio/*': [] }}
+            file={field.value}
+            error={!!error}
+            helperText={
+              (!!error || helperText) && (
+                <FormHelperText error={!!error} sx={{ px: 2 }}>
+                  {error ? error?.message : helperText}
+                </FormHelperText>
+              )
+            }
+            {...other}
+          />
+        )
+      }
+    />
+  );
+}
+
+RHFUploadAudio.propTypes = {
   helperText: PropTypes.string,
   multiple: PropTypes.bool,
   name: PropTypes.string,

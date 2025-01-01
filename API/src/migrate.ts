@@ -11,7 +11,8 @@ export async function migrate(args: string[]) {
     models: [
       'Users',
       'Language',
-      'Category'
+      'Category',
+      'Stories'
     ],
   });
 

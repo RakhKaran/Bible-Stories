@@ -1,8 +1,10 @@
 import {
   Count,
   CountSchema,
+  DefaultTransactionalRepository,
   Filter,
   FilterExcludingWhere,
+  IsolationLevel,
   repository,
   Where,
 } from '@loopback/repository';
@@ -21,9 +23,13 @@ import {Category} from '../models';
 import {CategoryRepository} from '../repositories';
 import { authenticate } from '@loopback/authentication';
 import { PermissionKeys } from '../authorization/permission-keys';
+import { inject } from '@loopback/core';
+import { BibleStoriesDataSource } from '../datasources';
 
 export class CategoryController {
   constructor(
+    @inject('datasources.bibleStories')
+    public dataSource: BibleStoriesDataSource,
     @repository(CategoryRepository)
     public categoryRepository : CategoryRepository,
   ) {}
@@ -49,8 +55,20 @@ export class CategoryController {
       },
     })
     category: Omit<Category, 'id'>,
-  ): Promise<Category> {
-    return this.categoryRepository.create(category);
+  ): Promise<{success: boolean, message: string}> {
+    const repo = new DefaultTransactionalRepository(Category, this.dataSource);
+    const tx = await repo.beginTransaction(IsolationLevel.READ_COMMITTED);
+    try{
+      const newCategory =  this.categoryRepository.create(category);
+      await tx.commit();
+      return{
+        success: true,
+        message: 'Category Created Successfully',
+      }
+    }catch(error){
+      await tx.rollback();
+      throw error;
+    }
   }
 
   @get('/categories/count')
@@ -135,8 +153,16 @@ export class CategoryController {
       },
     })
     category: Category,
-  ): Promise<void> {
-    await this.categoryRepository.updateById(id, category);
+  ): Promise<{success: boolean, message: string}> {
+    try{
+      await this.categoryRepository.updateById(id, category);
+      return{
+        success : true,
+        message : 'Update success'
+      }
+    }catch(error){
+      throw error;
+    }
   }
 
   @authenticate({

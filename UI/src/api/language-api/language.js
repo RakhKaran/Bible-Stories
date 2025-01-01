@@ -12,7 +12,7 @@ export function useGetLanguageList() {
 
   const refreshLanguages = () => {
     // Use the `mutate` function to trigger a revalidation
-    mutate();
+    mutate(URL);
   };
 
   return{

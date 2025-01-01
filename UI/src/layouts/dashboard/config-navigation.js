@@ -4,8 +4,6 @@ import { paths } from 'src/routes/paths';
 // locales
 import { useLocales } from 'src/locales';
 // components
-import Label from 'src/components/label';
-import Iconify from 'src/components/iconify';
 import SvgColor from 'src/components/svg-color';
 
 // ----------------------------------------------------------------------
@@ -43,6 +41,9 @@ const ICONS = {
   ecommerce: icon('ic_ecommerce'),
   analytics: icon('ic_analytics'),
   dashboard: icon('ic_dashboard'),
+  language: icon('ic_languages'),
+  category: icon('ic_categories'),
+  story: icon('ic_story'),
 };
 
 // ----------------------------------------------------------------------
@@ -78,6 +79,36 @@ export function useNavData() {
             icon: ICONS.user,
             children: [
               { title: t('list'), path: paths.dashboard.user.list },
+            ],
+          },
+          // LANGUAGE
+          {
+            title: t('language'),
+            path: paths.dashboard.language.root,
+            icon: ICONS.language,
+            children: [
+              { title: t('list'), path: paths.dashboard.language.list },
+              { title: t('New Language'), path: paths.dashboard.language.new },
+            ],
+          },
+          // CATEGORY
+          {
+            title: t('category'),
+            path: paths.dashboard.category.root,
+            icon: ICONS.category,
+            children: [
+              { title: t('list'), path: paths.dashboard.category.list },
+              { title: t('New Category'), path: paths.dashboard.category.new },
+            ],
+          },
+          // STORY
+          {
+            title: t('story'),
+            path: paths.dashboard.story.root,
+            icon: ICONS.story,
+            children: [
+              { title: t('list'), path: paths.dashboard.story.list },
+              { title: t('New Category'), path: paths.dashboard.story.new },
             ],
           },
         ],

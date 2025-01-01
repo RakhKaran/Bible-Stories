@@ -48,6 +48,7 @@ export class FileUploadController {
     request: Request,
     @inject(RestBindings.Http.RESPONSE) response: Response,
   ): Promise<object> {
+    console.log('request', request);
     return new Promise<object>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
         if (err) {
@@ -127,6 +128,7 @@ export class FileUploadController {
         response.end(data); // Send the file data to the browser.
       }
     });
+
     return response;
   }
 

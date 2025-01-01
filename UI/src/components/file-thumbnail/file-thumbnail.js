@@ -9,9 +9,9 @@ import DownloadButton from './download-button';
 // ----------------------------------------------------------------------
 
 export default function FileThumbnail({ file, tooltip, imageView, onDownload, sx, imgSx }) {
-  const { name = '', path = '', preview = '' } = fileData(file);
+  const { name = '', path = '', preview = '', fileUrl = '', fileName = '' } = fileData(file);
 
-  const format = fileFormat(path || preview);
+  const format = fileFormat(path || preview || fileUrl || fileName);
 
   const renderContent =
     format === 'image' && imageView ? (
@@ -41,7 +41,7 @@ export default function FileThumbnail({ file, tooltip, imageView, onDownload, sx
 
   if (tooltip) {
     return (
-      <Tooltip title={name}>
+      <Tooltip title={name || fileName}>
         <Stack
           flexShrink={0}
           component="span"

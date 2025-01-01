@@ -50,16 +50,24 @@ export const endpoints = {
     details: '/api/product/details',
     search: '/api/product/search',
   },
+  // users api endpoints..
   users: {
     list: '/users',
     details: (userId) => `/users/${userId}`
   },
+  // languages api endpoints..
   languages: {
     list: '/fetch-languages',
     details: (languageId) => `/fetch-languages/${languageId}`
   },
+  // categories api endpoints..
   categories: {
     list: '/categories',
     details: (categoryId) => `/categories/${categoryId}`
+  },
+  // stories api endpoints..
+  stories: {
+    list: '/story-list',
+    details: (storyId) => `/story-by-id-admin/{storyId}/${storyId}`
   }
 };

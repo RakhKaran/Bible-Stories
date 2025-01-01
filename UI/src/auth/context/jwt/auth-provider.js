@@ -57,16 +57,9 @@ export function AuthProvider({ children }) {
   const initialize = useCallback(async () => {
     try {
       const accessToken = sessionStorage.getItem(STORAGE_KEY);
-
-      console.log('accessToken', accessToken);
-
       if (accessToken && isValidToken(accessToken)) {
         setSession(accessToken);
-
         const response = await axios.get(endpoints.auth.me);
-
-        console.log('me response', response);
-
         const user = response.data;
 
         dispatch({
@@ -108,7 +101,6 @@ export function AuthProvider({ children }) {
     const response = await axios.post(endpoints.auth.login, data);
 
     const { accessToken, userData } = response.data;
-    console.log(userData);
     if (userData && (userData.permissions.includes('admin')))
       setSession(accessToken);
     else throw new Error("Unauthorized Access");
@@ -156,7 +148,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   // ----------------------------------------------------------------------
-  console.log(state);
   const checkAuthenticated = state.user ? 'authenticated' : 'unauthenticated';
 
   const status = state.loading ? 'loading' : checkAuthenticated;
@@ -176,7 +167,6 @@ export function AuthProvider({ children }) {
     [login, logout, register, state.user, status]
   );
 
-  console.log('values',memoizedValue);
   return <AuthContext.Provider value={memoizedValue}>{children}</AuthContext.Provider>;
 }
 

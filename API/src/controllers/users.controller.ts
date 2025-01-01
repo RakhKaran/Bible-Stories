@@ -17,6 +17,7 @@ import { EmailManagerBindings } from '../keys';
 import { EmailManager } from '../services/email.service';
 import AdminForgotPasswordEmailTemplate from '../templates/adminForgetPassword.template';
 import { FirebaseAdmin } from '../services/firebase.service';
+import { CurrentUser } from '../types';
 
 // ----------------------------------------------------------------------------
 export class UsersController {
@@ -659,6 +660,63 @@ export class UsersController {
     }
   }
 
+  // update-user-profile
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN]},
+  }) 
+  @patch('/update-user-profile')
+  async updateUserProfile(
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            properties : {
+              firstName : {
+                type : 'string',
+                description : 'Users first name'
+              },
+              avatar : {
+                type : 'object',
+                description : 'Users profile Image'
+              }
+            }
+          }
+        }
+      }
+    })
+    requestBody : {
+      firstName : string;
+      avatar : {
+        fileUrl : string;
+      }
+    },
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser : CurrentUser,
+  ) : Promise<{success : boolean, message : string}>{
+    try{
+      const { firstName, avatar } = requestBody;
+
+      let updateData: any = {};
+
+      if(firstName){
+        updateData.firstName = firstName;
+      }
+
+      if(avatar){
+        updateData.avatar = avatar;
+      }
+
+      await this.usersRepository.updateById(Number(currentUser.id), updateData);
+
+      return{
+        success : true,
+        message : 'Profile updated'
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
   // get user by id
   @authenticate({
     strategy: 'jwt',
@@ -866,5 +924,6 @@ export class UsersController {
       throw error;
     }
   }
+
 
 }

@@ -108,6 +108,7 @@ export const paths = {
       booking: `${ROOTS.DASHBOARD}/booking`,
       file: `${ROOTS.DASHBOARD}/file`,
     },
+    // user routes
     user: {
       root: `${ROOTS.DASHBOARD}/user`,
       new: `${ROOTS.DASHBOARD}/user/new`,
@@ -119,6 +120,27 @@ export const paths = {
       demo: {
         edit: `${ROOTS.DASHBOARD}/user/${MOCK_ID}/edit`,
       },
+    },
+    // language routes
+    language: {
+      root: `${ROOTS.DASHBOARD}/language`,
+      new: `${ROOTS.DASHBOARD}/language/new`,
+      list: `${ROOTS.DASHBOARD}/language/list`,
+      edit: (id) => `${ROOTS.DASHBOARD}/language/${id}/edit`,
+    },
+    // category routes
+    category: {
+      root: `${ROOTS.DASHBOARD}/category`,
+      new: `${ROOTS.DASHBOARD}/category/new`,
+      list: `${ROOTS.DASHBOARD}/category/list`,
+      edit: (id) => `${ROOTS.DASHBOARD}/category/${id}/edit`,
+    },
+    // stories routes
+    story: {
+      root: `${ROOTS.DASHBOARD}/story`,
+      new: `${ROOTS.DASHBOARD}/story/new`,
+      list: `${ROOTS.DASHBOARD}/story/list`,
+      edit: (id) => `${ROOTS.DASHBOARD}/story/${id}/edit`,
     },
     product: {
       root: `${ROOTS.DASHBOARD}/product`,

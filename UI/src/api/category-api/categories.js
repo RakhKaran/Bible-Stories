@@ -12,7 +12,7 @@ export function useGetCategoriesList() {
 
   const refreshCategories = () => {
     // Use the `mutate` function to trigger a revalidation
-    mutate();
+    mutate(URL);
   };
 
   return{

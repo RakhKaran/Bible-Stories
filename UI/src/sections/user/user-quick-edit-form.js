@@ -91,6 +91,9 @@ export default function UserQuickEditForm({ currentUser, open, onClose, onRefres
       }
     } catch (error) {
       console.error(error);
+      enqueueSnackbar(typeof error === 'string' ? error : error.error.message, {
+        variant: 'error',
+      });
     }
   });
 
