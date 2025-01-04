@@ -1,6 +1,6 @@
 import { DefaultTransactionalRepository, IsolationLevel, repository } from "@loopback/repository";
-import { CategoryRepository, StoriesRepository, UsersRepository } from "../repositories";
-import { get, getJsonSchemaRef, getModelSchemaRef, HttpErrors, param, patch, post, Request, requestBody, RestBindings } from "@loopback/rest";
+import { CategoryRepository, DownloadStoriesRepository, LikedStoriesRepository, StoriesRepository, UsersRepository } from "../repositories";
+import { get, getJsonSchemaRef, getModelSchemaRef, HttpErrors, param, patch, post, Request, requestBody, response, RestBindings } from "@loopback/rest";
 import { Stories } from "../models";
 import { BibleStoriesDataSource } from "../datasources";
 import { inject } from "@loopback/core";
@@ -19,6 +19,10 @@ export class StoriesController {
     public usersRepository : UsersRepository,
     @repository(CategoryRepository)
     public categoryRepository : CategoryRepository,
+    @repository(LikedStoriesRepository)
+    public likedStoriesRepository : LikedStoriesRepository,
+    @repository(DownloadStoriesRepository)
+    public downloadStoriesRepository : DownloadStoriesRepository,
     @inject('service.jwt.service')
     public jwtService: JWTService,
   ) {}
@@ -71,7 +75,9 @@ export class StoriesController {
     const repo = new DefaultTransactionalRepository(Stories, this.dataSource);
     const tx = await repo.beginTransaction(IsolationLevel.READ_COMMITTED);
     try{
-      await this.storiesRepository.create(storyData);
+      await this.storiesRepository.create(storyData,{
+        transaction: tx,
+      });
       await tx.commit();
 
       return{
@@ -204,8 +210,20 @@ export class StoriesController {
     @inject(RestBindings.Http.REQUEST) request: Request,
   ): Promise<{ success: boolean; message: string; data: object }> {
     try {
-      console.log('Story ID:', storyId);
-      const story = await this.storiesRepository.findById(storyId);
+      const story = await this.storiesRepository.findOne({
+        where: { id: storyId },
+        include: [
+          {
+            relation: 'category',
+            scope: {
+              fields: {
+                id: true,
+                categoryName: true,
+              },
+            },
+          },
+        ],
+      });
 
       if (!story) {
         throw new HttpErrors.NotFound('Story not found');
@@ -225,12 +243,28 @@ export class StoriesController {
 
       let filteredAudios = story.audios;
 
+      let isLiked = false;
+
+      let isDownload = false;
+
       if (user && user.audioLanguage) {
         // Filter by user's audio language, fallback to English if not found
         filteredAudios = story.audios.filter(
           (audio: any) =>
             audio.language.id === user.audioLanguage || audio.language.code === 'en'
         );
+
+        const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
+
+        if(likedStory){
+          isLiked = true;
+        }
+
+        const downloadStory = await this.downloadStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
+
+        if(downloadStory){
+          isDownload = true;
+        }
       } else if (user && !user.audioLanguage && user.appLanguage) {
         // Filter by user's app language, fallback to English
         filteredAudios = story.audios.filter(
@@ -238,6 +272,18 @@ export class StoriesController {
             audio.language.langName?.toLowerCase() === user.appLanguage?.toLowerCase() ||
             audio.language.code === 'en'
         );
+
+        const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
+
+        if(likedStory){
+          isLiked = true;
+        }
+
+        const downloadStory = await this.downloadStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
+
+        if(downloadStory){
+          isDownload = true;
+        }
       } else {
         // Default to English audio
         filteredAudios = story.audios.filter(
@@ -248,6 +294,8 @@ export class StoriesController {
       const filteredStory = {
         ...story,
         audios: filteredAudios,
+        isLiked,
+        isDownload
       };
 
       return {
@@ -328,7 +376,7 @@ export class StoriesController {
     }
   }
 
-  // audio-list with categories
+  // audio-list with categories...
   @get('/home-page-audio-list')
   async homePageAudioList(
     @inject(RestBindings.Http.REQUEST) request : Request,
@@ -500,7 +548,7 @@ export class StoriesController {
     }
   }
 
-  // audio-list by cateogory
+  // audio-list by cateogory...
   @get('/stories-by-category/{categoryId}')
   async StoriesByCategory(
     @param.path.number('categoryId') categoryId : number,
@@ -595,6 +643,37 @@ export class StoriesController {
         success : true,
         message : 'Audio list through category',
         data : filteredStories
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
+  // update story by id...
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN]},
+  })
+  @patch('/stories/{id}')
+  @response(204, {
+    description: 'Category PATCH success',
+  })
+  async updateById(
+    @param.path.number('id') id: number,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Stories, {partial: true}),
+        },
+      },
+    })
+    story: Stories,
+  ): Promise<{success: boolean, message: string}> {
+    try{
+      await this.storiesRepository.updateById(id, story);
+      return{
+        success : true,
+        message : 'Update success'
       }
     }catch(error){
       throw error;

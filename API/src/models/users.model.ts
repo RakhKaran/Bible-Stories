@@ -106,6 +106,12 @@ export class Users extends Entity {
   otpExpireAt: string;
 
   @property({
+    type: 'boolean',
+    default : false
+  })
+  isUserDeleted: boolean
+
+  @property({
     type: 'date',
   })
   createdAt?: Date;

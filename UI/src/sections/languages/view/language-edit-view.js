@@ -16,11 +16,15 @@ export default function LanguageEditView() {
   return (
     <Container maxWidth={settings.themeStretch ? false : 'lg'}>
       <CustomBreadcrumbs
-        heading="Edit"
+        heading="New Language"
         links={[
           {
             name: 'Dashboard',
             href: paths.dashboard.root,
+          },
+          {
+            name: 'list',
+            href: paths.dashboard.language.list,
           },
           {
             name: 'Language',

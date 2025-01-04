@@ -111,7 +111,7 @@ export default function LanguageQuickEditForm({ currentLanguage, open, onClose, 
                 Active
               </MenuItem>
               <MenuItem value={false}>
-                Not Active
+                InActive
               </MenuItem>
             </RHFSelect>
 

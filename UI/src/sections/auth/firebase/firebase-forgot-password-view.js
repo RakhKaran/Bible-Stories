@@ -119,7 +119,7 @@ export default function FirebaseForgotPasswordView() {
         <Typography variant="h3">Forgot your password?</Typography>
 
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Please enter the email address associated with your account and We will email you a link
+          Please enter the email address associated with your account and We will email you a otp
           to reset your password.
         </Typography>
       </Stack>

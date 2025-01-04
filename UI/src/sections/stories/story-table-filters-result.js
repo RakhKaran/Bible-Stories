@@ -18,6 +18,7 @@ export default function StoryTableFiltersResult({
   onResetFilters,
   //
   results,
+  categoriesData,
   ...other
 }) {
   const handleRemoveStatus = () => {
@@ -28,6 +29,10 @@ export default function StoryTableFiltersResult({
     const newValue = filters.role.filter((item) => item !== inputValue);
     onFilters('role', newValue);
   };
+
+  const handleRemoveCategory = () => {
+    onFilters('category', undefined);
+  }
 
   return (
     <Stack spacing={1.5} {...other}>
@@ -53,6 +58,21 @@ export default function StoryTableFiltersResult({
           </Block>
         )}
 
+        {!!filters.category && (
+          <Block label="Category:">
+            {categoriesData.length > 0 &&
+              categoriesData.find((cat) => cat.id === filters.category) && (
+                <Chip
+                  label={
+                    categoriesData.find((cat) => cat.id === filters.category).categoryName
+                  }
+                  size="small"
+                  onDelete={handleRemoveCategory}
+                />
+              )}
+          </Block>
+        )}
+
         <Button
           color="error"
           onClick={onResetFilters}
@@ -70,6 +90,7 @@ StoryTableFiltersResult.propTypes = {
   onFilters: PropTypes.func,
   onResetFilters: PropTypes.func,
   results: PropTypes.number,
+  categoriesData: PropTypes.array,
 };
 
 // ----------------------------------------------------------------------

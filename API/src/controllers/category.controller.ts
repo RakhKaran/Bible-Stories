@@ -59,7 +59,9 @@ export class CategoryController {
     const repo = new DefaultTransactionalRepository(Category, this.dataSource);
     const tx = await repo.beginTransaction(IsolationLevel.READ_COMMITTED);
     try{
-      const newCategory =  this.categoryRepository.create(category);
+      const newCategory = await this.categoryRepository.create(category,{
+        transaction: tx,
+      });
       await tx.commit();
       return{
         success: true,

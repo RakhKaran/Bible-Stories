@@ -27,8 +27,8 @@ export function useGetStoryList() {
 
 // ----------------------------------------------------------------------
 
-export function useGetStoryById(storyId) {
-  const URL = storyId ? endpoints.stories.storyId(storyId) : null;
+export function useGetStoryById(storyId, open) {
+  const URL = storyId ? endpoints.stories.details(storyId) : null;
 
   const { data, isLoading, error, isValidating } = useSWR(URL, fetcher);
 

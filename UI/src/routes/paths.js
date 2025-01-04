@@ -101,12 +101,12 @@ export const paths = {
     fileManager: `${ROOTS.DASHBOARD}/file-manager`,
     permission: `${ROOTS.DASHBOARD}/permission`,
     general: {
-      app: `${ROOTS.DASHBOARD}/app`,
-      ecommerce: `${ROOTS.DASHBOARD}/ecommerce`,
+      // app: `${ROOTS.DASHBOARD}/app`,
+      // ecommerce: `${ROOTS.DASHBOARD}/ecommerce`,
       analytics: `${ROOTS.DASHBOARD}/analytics`,
-      banking: `${ROOTS.DASHBOARD}/banking`,
-      booking: `${ROOTS.DASHBOARD}/booking`,
-      file: `${ROOTS.DASHBOARD}/file`,
+      // banking: `${ROOTS.DASHBOARD}/banking`,
+      // booking: `${ROOTS.DASHBOARD}/booking`,
+      // file: `${ROOTS.DASHBOARD}/file`,
     },
     // user routes
     user: {
@@ -141,6 +141,18 @@ export const paths = {
       new: `${ROOTS.DASHBOARD}/story/new`,
       list: `${ROOTS.DASHBOARD}/story/list`,
       edit: (id) => `${ROOTS.DASHBOARD}/story/${id}/edit`,
+      // story-questions
+      newQuestion:(storyId) => `${ROOTS.DASHBOARD}/story/new-question/${storyId}`,
+      questionList:(storyId) => `${ROOTS.DASHBOARD}/story/question-list/${storyId}`,
+      // story-comments
+      commentsList:(storyId) => `${ROOTS.DASHBOARD}/story/comments-list/${storyId}`,
+    },
+    // question routes
+    question: {
+      root: `${ROOTS.DASHBOARD}/question`,
+      new: `${ROOTS.DASHBOARD}/question/new`,
+      list: `${ROOTS.DASHBOARD}/question/list`,
+      edit: (id) => `${ROOTS.DASHBOARD}/question/${id}/edit`,
     },
     product: {
       root: `${ROOTS.DASHBOARD}/product`,

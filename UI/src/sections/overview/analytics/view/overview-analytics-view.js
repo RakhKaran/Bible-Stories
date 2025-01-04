@@ -3,24 +3,24 @@ import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 // _mock
-import {
-  _analyticTasks,
-  _analyticPosts,
-  _analyticTraffic,
-  _analyticOrderTimeline,
-} from 'src/_mock';
+// import {
+//   _analyticTasks,
+//   _analyticPosts,
+//   _analyticTraffic,
+//   _analyticOrderTimeline,
+// } from 'src/_mock';
 // components
 import { useSettingsContext } from 'src/components/settings';
 //
-import AnalyticsNews from '../analytics-news';
-import AnalyticsTasks from '../analytics-tasks';
+// import AnalyticsNews from '../analytics-news';
+// import AnalyticsTasks from '../analytics-tasks';
 import AnalyticsCurrentVisits from '../analytics-current-visits';
-import AnalyticsOrderTimeline from '../analytics-order-timeline';
+// import AnalyticsOrderTimeline from '../analytics-order-timeline';
 import AnalyticsWebsiteVisits from '../analytics-website-visits';
 import AnalyticsWidgetSummary from '../analytics-widget-summary';
-import AnalyticsTrafficBySite from '../analytics-traffic-by-site';
-import AnalyticsCurrentSubject from '../analytics-current-subject';
-import AnalyticsConversionRates from '../analytics-conversion-rates';
+// import AnalyticsTrafficBySite from '../analytics-traffic-by-site';
+// import AnalyticsCurrentSubject from '../analytics-current-subject';
+// import AnalyticsConversionRates from '../analytics-conversion-rates';
 
 // ----------------------------------------------------------------------
 
@@ -130,7 +130,7 @@ export default function OverviewAnalyticsView() {
           />
         </Grid>
 
-        <Grid xs={12} md={6} lg={8}>
+        {/* <Grid xs={12} md={6} lg={8}>
           <AnalyticsConversionRates
             title="Conversion Rates"
             subheader="(+43%) than last year"
@@ -179,7 +179,7 @@ export default function OverviewAnalyticsView() {
 
         <Grid xs={12} md={6} lg={8}>
           <AnalyticsTasks title="Tasks" list={_analyticTasks} />
-        </Grid>
+        </Grid> */}
       </Grid>
     </Container>
   );

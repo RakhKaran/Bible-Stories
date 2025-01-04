@@ -10,24 +10,19 @@ export default function SingleAudioFilePreview({ audioUrl = '' }) {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    // Handle metadata loading
+    const audio = audioRef.current;
+
     const handleLoadedMetadata = () => {
-      if (audioRef.current) {
-        // When metadata is loaded, update the duration
-        // console.log('duration',audioRef.current.duration);
-        setDuration(audioRef.current.duration);
+      if (audio) {
+        setDuration(audio.duration); // Update the duration state
       }
     };
 
-    const audioElement = audioRef.current;
-
-    if (audioElement) {
-      // Add event listener for the loadedmetadata event
-      audioElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+    if (audio) {
+      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
       return () => {
-        // Clean up the event listener
-        audioElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       };
     }
   }, []);
@@ -51,7 +46,7 @@ export default function SingleAudioFilePreview({ audioUrl = '' }) {
         controls
         ref={audioRef}
         src={audioUrl}
-        preload="metadata" // Only load metadata initially
+        preload="auto" // Only load metadata initially
         sx={{
           width: '100%',
           outline: 'none',
@@ -66,10 +61,11 @@ export default function SingleAudioFilePreview({ audioUrl = '' }) {
         />
         Your browser does not support the audio element.
       </Box>
+      <p>{duration}</p>
     </Box>
   );
 }
 
 SingleAudioFilePreview.propTypes = {
-    audioUrl : PropTypes.string
-}
+  audioUrl: PropTypes.string,
+};

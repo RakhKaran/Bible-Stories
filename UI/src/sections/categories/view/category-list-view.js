@@ -30,6 +30,7 @@ import {
   TableSelectedAction,
   TablePaginationCustom,
 } from 'src/components/table';
+import { RouterLink } from 'src/routes/components';
 // api
 import { useGetCategoriesList } from 'src/api/category-api/categories';
 //
@@ -140,22 +141,22 @@ export default function CategoryListView() {
     <>
       <Container maxWidth={settings.themeStretch ? false : 'lg'}>
         <CustomBreadcrumbs
-          heading="List"
+          heading="Category List"
           links={[
             { name: 'Dashboard', href: paths.dashboard.root },
             { name: 'Category', href: paths.dashboard.category.root },
             { name: 'List' },
           ]}
-          // action={
-          //   <Button
-          //     component={RouterLink}
-          //     href={paths.dashboard.user.new}
-          //     variant="contained"
-          //     startIcon={<Iconify icon="mingcute:add-line" />}
-          //   >
-          //     New User
-          //   </Button>
-          // }
+          action={
+            <Button
+              component={RouterLink}
+              href={paths.dashboard.category.new}
+              variant="contained"
+              startIcon={<Iconify icon="mingcute:add-line" />}
+            >
+              New Category
+            </Button>
+          }
           sx={{
             mb: { xs: 3, md: 5 },
           }}

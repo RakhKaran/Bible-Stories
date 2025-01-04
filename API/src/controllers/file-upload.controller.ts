@@ -16,6 +16,7 @@ import path from 'path';
 import {promisify} from 'util';
 import {FILE_UPLOAD_SERVICE, STORAGE_DIRECTORY} from '../keys';
 import {FileUploadHandler} from '../types';
+import mime from 'mime-types';
 
 const readdir = promisify(fs.readdir);
 
@@ -48,7 +49,6 @@ export class FileUploadController {
     request: Request,
     @inject(RestBindings.Http.RESPONSE) response: Response,
   ): Promise<object> {
-    console.log('request', request);
     return new Promise<object>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
         if (err) {
@@ -112,25 +112,71 @@ export class FileUploadController {
     return files;
   }
 
+  // @get('/files/{filename}')
+  // @oas.response.file()
+  // downloadFile(
+  //   @param.path.string('filename') fileName: string,
+  //   @inject(RestBindings.Http.RESPONSE) response: Response,
+  // ) {
+  //   const file = this.validateFileName(fileName);
+  //   fs.readFile(file, function (err, data) {
+  //     if (err) {
+  //       response.writeHead(404);
+  //       response.end('Something Went Wrong');
+  //     } else {
+  //       response.writeHead(200);
+  //       response.end(data); // Send the file data to the browser.
+  //     }
+  //   });
+
+  //   return response;
+  // }
+
   @get('/files/{filename}')
-  @oas.response.file()
-  downloadFile(
+    @oas.response.file()
+    downloadFile(
     @param.path.string('filename') fileName: string,
     @inject(RestBindings.Http.RESPONSE) response: Response,
-  ) {
-    const file = this.validateFileName(fileName);
-    fs.readFile(file, function (err, data) {
-      if (err) {
-        response.writeHead(404);
-        response.end('Something Went Wrong');
-      } else {
-        response.writeHead(200);
-        response.end(data); // Send the file data to the browser.
-      }
-    });
+    ) {
+      const filePath = this.validateFileName(fileName); // Get the file path
+      const stat = fs.statSync(filePath); // Get file stats (e.g., size)
+      const totalSize = stat.size; // Total file size
 
-    return response;
-  }
+      const mimeType = mime.lookup(fileName) || 'application/octet-stream'; // Determine MIME type
+
+      const range = response.req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+
+        if (start >= totalSize || end >= totalSize) {
+          response.writeHead(416, {
+            'Content-Range': `bytes */${totalSize}`,
+          });
+          return response.end();
+        }
+
+        const chunkSize = end - start + 1;
+        response.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunkSize,
+          'Content-Type': mimeType,
+        });
+
+        const stream = fs.createReadStream(filePath, { start, end });
+        stream.pipe(response);
+      } else {
+        response.writeHead(200, {
+          'Content-Length': totalSize,
+          'Content-Type': mimeType,
+        });
+        fs.createReadStream(filePath).pipe(response);
+      }
+
+      return response;
+    }
 
   /**
    * Validate file names to prevent them goes beyond the designated directory

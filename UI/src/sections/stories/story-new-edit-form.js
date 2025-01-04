@@ -35,7 +35,7 @@ export default function StoryNewEditForm({ currentStory }) {
   const [languageData, setLanguageData] = useState([]);
   const [categoriesData, setCategoriesData] = useState([]);
   const [newAudio, setNewAudio] = useState({
-    language: {},
+    language: null,
     audio: {},
     duration: undefined,
   });
@@ -115,8 +115,6 @@ export default function StoryNewEditForm({ currentStory }) {
 
   const values = watch();
 
-  console.log('values', values);
-
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'audios',
@@ -124,13 +122,40 @@ export default function StoryNewEditForm({ currentStory }) {
 
   const handleAddNewAudio = () => {
     if (newAudio.language && newAudio.audio && newAudio.duration) {
-      append(newAudio);
-      setNewAudio({ language: undefined, audio: {}, duration: undefined });
-      setValue('language', undefined);
-      setValue('audio', {});
+      // Check if any field already exists with the same language code
+      if (fields.length > 0) {
+        const existingIndex = fields.findIndex(
+          (audio) => audio?.language?.code === newAudio.language.code
+        );
+  
+        if (existingIndex !== -1) {
+          // Update the existing audio entry
+          fields[existingIndex] = {
+            ...fields[existingIndex],
+            ...newAudio, // Merge with newAudio to update the details
+          };
+  
+          // Update the form fields with updated array
+          setValue('audios', [...fields]);
+          enqueueSnackbar('Audio updated successfully.', { variant: 'success' });
+        } else {
+          // Append the new audio entry if no match is found
+          append(newAudio);
+          enqueueSnackbar('New audio added successfully.', { variant: 'success' });
+        }
+      } else {
+        // If fields are empty, simply append
+        append(newAudio);
+        enqueueSnackbar('New audio added successfully.', { variant: 'success' });
+      }
+  
+      // Reset the form and state
+      setNewAudio({ language: null, audio: null, duration: undefined });
+      setValue('language', null);
+      setValue('audio', null);
       setValue('duration', undefined);
       reset({
-        ...methods.getValues()
+        ...methods.getValues(),
       });
     } else {
       enqueueSnackbar('Please fill in all fields.', { variant: 'error' });
@@ -196,36 +221,79 @@ export default function StoryNewEditForm({ currentStory }) {
     [setValue, values.images]
   );
 
+  // const handleDropAudio = useCallback(
+  //   async (acceptedFiles, index) => {
+  //     const file = acceptedFiles[0];
+  //     if (file) {
+  //       const formData = new FormData();
+  //       formData.append('file', file);
+  //       const response = await axiosInstance.post('/files', formData);
+  //       const { data } = response;
+  //       setNewAudio({
+  //         ...newAudio,
+  //         audio: {
+  //           fileName: data?.files[0].fileName,
+  //           fileUrl: data?.files[0].fileUrl,
+  //         },
+  //       });
+  //       setValue(
+  //         `audio`,
+  //         {
+  //           fileName: data?.files[0].fileName,
+  //           fileUrl: data?.files[0].fileUrl,
+  //         },
+  //         {
+  //           shouldValidate: true,
+  //         }
+  //       );
+  //     }
+  //   },
+  //   [setValue, newAudio]
+  // );
+
   const handleDropAudio = useCallback(
     async (acceptedFiles, index) => {
       const file = acceptedFiles[0];
       if (file) {
+        // Upload the file to the server
         const formData = new FormData();
         formData.append('file', file);
         const response = await axiosInstance.post('/files', formData);
         const { data } = response;
-        setNewAudio({
-          ...newAudio,
-          audio: {
-            fileName: data?.files[0].fileName,
-            fileUrl: data?.files[0].fileUrl,
-          },
+  
+        // Set audio details
+        const fileUrl = data?.files[0]?.fileUrl;
+        // Fetch audio duration
+        const audio = new Audio(fileUrl);
+        audio.addEventListener('loadedmetadata', () => {
+          const {duration} = audio; // Duration in seconds
+  
+          // Set duration in form
+          setValue('duration', duration);
+          setValue(
+            `audio`,
+            {
+              fileName: data?.files[0]?.fileName,
+              fileUrl,
+            },
+            {
+              shouldValidate: true,
+            }
+          );
+          setNewAudio({
+            ...newAudio,
+            audio: {
+              fileName: data?.files[0]?.fileName,
+              fileUrl,
+            },
+            duration 
+          });
         });
-        setValue(
-          `audio`,
-          {
-            fileName: data?.files[0].fileName,
-            fileUrl: data?.files[0].fileUrl,
-          },
-          {
-            shouldValidate: true,
-          }
-        );
       }
     },
     [setValue, newAudio]
   );
-
+  
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
       <Grid justifyContent="center" container spacing={3}>
@@ -285,19 +353,19 @@ export default function StoryNewEditForm({ currentStory }) {
                       ))}
                   </RHFSelect>
                   <RHFUploadAudio name="audio" onDrop={(files) => handleDropAudio(files)} />
-                  <RHFTextField
+                  {/* <RHFTextField
                     name="duration"
                     label="Duration (in seconds)"
                     type="number"
                     onChange={(e) => setNewAudio({ ...newAudio, duration: e.target.value })}
-                  />
-                  <LoadingButton
+                  /> */}
+                  {/* <LoadingButton
                     variant="outlined"
                     color="error"
                     onClick={() => setNewAudio({ language: newAudio.language, audio: {}, duration: undefined })}
                   >
                     Remove Audio
-                  </LoadingButton>
+                  </LoadingButton> */}
                 </Stack>
                 <LoadingButton variant="contained" onClick={() => handleAddNewAudio()}>
                   Add Audio
@@ -305,7 +373,7 @@ export default function StoryNewEditForm({ currentStory }) {
               </Stack>
             </Box>
 
-            <Table>
+            <Table sx={{mt:'10px'}}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ textAlign: 'center' }}>Language</TableCell>
@@ -329,6 +397,7 @@ export default function StoryNewEditForm({ currentStory }) {
                               borderColor: 'orange',
                               outlineColor: 'orange',
                               color: 'white',
+                              mr:'4px'
                             }}
                             variant="contained"
                             onClick={() => {
@@ -338,6 +407,9 @@ export default function StoryNewEditForm({ currentStory }) {
                                 audio: audio.audio,
                                 duration: audio.duration,
                               });
+                              setValue('audio', audio.audio);
+                              setValue('duration', audio.duration);
+                              setValue('language', audio.language);
                             }}
                           >
                             Edit

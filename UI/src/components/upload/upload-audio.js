@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useDropzone } from 'react-dropzone';
 // @mui
@@ -39,6 +40,8 @@ export default function UploadAudio({
     accept: 'audio/*',
     ...other,
   });
+
+  const audioRef = useRef(null);
 
   console.log('fileData', file);
 

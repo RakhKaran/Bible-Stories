@@ -130,6 +130,7 @@ export function AuthProvider({ children }) {
     const { accessToken, user } = response.data;
 
     sessionStorage.setItem(STORAGE_KEY, accessToken);
+    localStorage.setItem('audioLanguage', user.audioLanguage);
 
     dispatch({
       type: 'REGISTER',

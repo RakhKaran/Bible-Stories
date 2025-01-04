@@ -2,3 +2,8 @@ export * from './users.model';
 export * from './language.model';
 export * from './category.model';
 export * from './stories.model';
+export * from './stories-questions.model';
+export * from './general-questions.model';
+export * from './comments.model';
+export * from './liked-stories.model';
+export * from './download-stories.model';

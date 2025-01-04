@@ -15,6 +15,7 @@ import { useRouter } from 'src/routes/hook';
 // hooks
 import { useBoolean } from 'src/hooks/use-boolean';
 // components
+import axiosInstance from 'src/utils/axios';
 import Iconify from 'src/components/iconify';
 import Scrollbar from 'src/components/scrollbar';
 import { ConfirmDialog } from 'src/components/custom-dialog';
@@ -32,6 +33,8 @@ import {
 } from 'src/components/table';
 // api
 import { useGetStoryList } from 'src/api/story-api/story';
+import { useGetCategoriesList } from 'src/api/category-api/categories';
+import { useGetLanguageList } from 'src/api/language-api/language';
 //
 import StoryTableRow from '../story-table-row';
 import StoryTableToolbar from '../story-table-toolbar';
@@ -41,16 +44,22 @@ import StoryTableFiltersResult from '../story-table-filters-result';
 
 const TABLE_HEAD = [
   { id: 'title', label: 'Title' },
-  { id: 'audio', label: 'Audio', width: 600},
+  { id: 'audio', label: 'Audio'},
+  { id: 'Language', label: 'Language'},
   { id: 'createdAt', label: 'Create at', width: 160 },
   // { id: 'status', label: 'Status', width: 100 },
+  { id: ''},
   { id: '', width: 88 },
 ];
 
+const languageId = localStorage.getItem('audioLanguage');
+
 const defaultFilters = {
   name: '',
+  category : undefined,
   role: [],
   status: 'all',
+  language: Number(languageId) || undefined,
 };
 
 // ----------------------------------------------------------------------
@@ -65,16 +74,34 @@ export default function StoryListView() {
   const confirm = useBoolean();
 
   const [tableData, setTableData] = useState([]);
-
+  const [categoriesData, setCategoriesData] = useState([]);
+  const [languagesData, setLanguagesData] = useState([]);
+  const [activeAudioIndex, setActiveAudioIndex] = useState(undefined);
   const [filters, setFilters] = useState(defaultFilters);
-
   const {stories, storiesEmpty, refreshStories} = useGetStoryList();
+  const {categories, categoriesEmpty} = useGetCategoriesList();
+  const {languages, languagesEmpty} = useGetLanguageList();
 
+  // stories..
   useEffect(() => {
     if(stories && !storiesEmpty){
       setTableData(stories);
     }
   },[stories, storiesEmpty]);
+
+  // categories..
+  useEffect(() => {
+    if(categories && !categoriesEmpty){
+      setCategoriesData(categories);
+    }
+  },[categories, categoriesEmpty]);
+
+  // languages..
+  useEffect(() => {
+    if(languages && !languagesEmpty){
+      setLanguagesData(languages);
+    }
+  },[languages, languagesEmpty]);
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -136,14 +163,26 @@ export default function StoryListView() {
     setFilters(defaultFilters);
   }, []);
 
+  const onChangeLanguage = async (langId) => {
+    try{
+      const response = await axiosInstance.post('/users/set-lang',{audioLanguage : langId});
+      if(response?.data?.success){
+        localStorage.setItem('audioLanguage', langId);
+        refreshStories();
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
   return (
     <>
       <Container maxWidth={settings.themeStretch ? false : 'lg'}>
         <CustomBreadcrumbs
-          heading="List"
+          heading="Story List"
           links={[
             { name: 'Dashboard', href: paths.dashboard.root },
-            { name: 'Category', href: paths.dashboard.category.root },
+            { name: 'Story', href: paths.dashboard.story.root },
             { name: 'List' },
           ]}
           // action={
@@ -165,6 +204,9 @@ export default function StoryListView() {
           <StoryTableToolbar
             filters={filters}
             onFilters={handleFilters}
+            categoriesData = {categoriesData}
+            languagesData = {languagesData}
+            onChangeLanguage = {(langId) => onChangeLanguage(langId)}
           />
 
           {canReset && (
@@ -175,6 +217,7 @@ export default function StoryListView() {
               onResetFilters={handleResetFilters}
               //
               results={dataFiltered.length}
+              categoriesData = {categoriesData}
               sx={{ p: 2.5, pt: 0 }}
             />
           )}
@@ -232,6 +275,10 @@ export default function StoryListView() {
                         onDeleteRow={() => handleDeleteRow(row.id)}
                         onEditRow={() => handleEditRow(row.id)}
                         onRefreshStories={() => refreshStories()}
+                        activeAudioIndex={activeAudioIndex}
+                        setActiveAudioIndex={setActiveAudioIndex}
+                        categoriesData = {categoriesData}
+                        languagesData = {languagesData}
                       />
                     ))}
 
@@ -288,7 +335,7 @@ export default function StoryListView() {
 // ----------------------------------------------------------------------
 
 function applyFilter({ inputData, comparator, filters }) {
-  const { name, status, role } = filters;
+  const { name, status, role, category } = filters;
 
   const stabilizedThis = inputData.map((el, index) => [el, index]);
 
@@ -302,7 +349,13 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (user) => user.firstName.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (story) => story.title.toLowerCase().indexOf(name.toLowerCase()) !== -1
+    );
+  }
+
+  if (category) {
+    inputData = inputData.filter(
+      (story) => story.categoryId === category
     );
   }
 

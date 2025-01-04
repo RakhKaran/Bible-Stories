@@ -45,9 +45,10 @@ export class LanguageController {
     const repo = new DefaultTransactionalRepository(Language, this.dataSource);
     const tx = await repo.beginTransaction(IsolationLevel.READ_COMMITTED);
     try{
-      await this.languageRepository.create(languageData);
+      await this.languageRepository.create(languageData,{
+        transaction: tx,
+      });
       await tx.commit();
-
       return{
         success : true,
         message : 'New Language Created'

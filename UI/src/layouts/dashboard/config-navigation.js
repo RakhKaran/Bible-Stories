@@ -44,6 +44,7 @@ const ICONS = {
   language: icon('ic_languages'),
   category: icon('ic_categories'),
   story: icon('ic_story'),
+  question: icon('ic_conversations'),
 };
 
 // ----------------------------------------------------------------------
@@ -58,12 +59,12 @@ export function useNavData() {
       {
         subheader: t('overview'),
         items: [
-          { title: t('app'), path: paths.dashboard.root, icon: ICONS.dashboard },
-          { title: t('ecommerce'), path: paths.dashboard.general.ecommerce, icon: ICONS.ecommerce },
-          { title: t('analytics'), path: paths.dashboard.general.analytics, icon: ICONS.analytics },
-          { title: t('banking'), path: paths.dashboard.general.banking, icon: ICONS.banking },
-          { title: t('booking'), path: paths.dashboard.general.booking, icon: ICONS.booking },
-          { title: t('file'), path: paths.dashboard.general.file, icon: ICONS.file },
+          { title: t('dashboard'), path: paths.dashboard.root, icon: ICONS.dashboard },
+          // { title: t('ecommerce'), path: paths.dashboard.general.ecommerce, icon: ICONS.ecommerce },
+          // { title: t('analytics'), path: paths.dashboard.general.analytics, icon: ICONS.analytics },
+          // { title: t('banking'), path: paths.dashboard.general.banking, icon: ICONS.banking },
+          // { title: t('booking'), path: paths.dashboard.general.booking, icon: ICONS.booking },
+          // { title: t('file'), path: paths.dashboard.general.file, icon: ICONS.file },
         ],
       },
 
@@ -108,7 +109,17 @@ export function useNavData() {
             icon: ICONS.story,
             children: [
               { title: t('list'), path: paths.dashboard.story.list },
-              { title: t('New Category'), path: paths.dashboard.story.new },
+              { title: t('New Story'), path: paths.dashboard.story.new },
+            ],
+          },
+          // GENERAL QUESTION
+          {
+            title: t('general questions'),
+            path: paths.dashboard.question.root,
+            icon: ICONS.question,
+            children: [
+              { title: t('list'), path: paths.dashboard.question.list },
+              { title: t('New question'), path: paths.dashboard.question.new },
             ],
           },
         ],

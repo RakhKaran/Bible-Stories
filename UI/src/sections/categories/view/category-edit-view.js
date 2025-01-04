@@ -16,11 +16,15 @@ export default function CategoryEditView() {
   return (
     <Container maxWidth={settings.themeStretch ? false : 'lg'}>
       <CustomBreadcrumbs
-        heading="Edit"
+        heading="New Category"
         links={[
           {
             name: 'Dashboard',
             href: paths.dashboard.root,
+          },
+          {
+            name: 'List',
+            href: paths.dashboard.category.list,
           },
           {
             name: 'Category',

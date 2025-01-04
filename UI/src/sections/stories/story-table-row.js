@@ -1,13 +1,16 @@
+/* eslint-disable no-return-assign */
 /* eslint-disable jsx-a11y/media-has-caption */
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import PropTypes from 'prop-types';
 import { format } from 'date-fns';
+import { paths } from 'src/routes/paths';
 // @mui
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
-// import Checkbox from '@mui/material/Checkbox';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import ListItemText from '@mui/material/ListItemText';
@@ -15,53 +18,72 @@ import Typography from '@mui/material/Typography';
 // hooks
 import { useBoolean } from 'src/hooks/use-boolean';
 // components
-import Label from 'src/components/label';
 import Iconify from 'src/components/iconify';
 import CustomPopover, { usePopover } from 'src/components/custom-popover';
 import { ConfirmDialog } from 'src/components/custom-dialog';
-//
 import StoryQuickEditForm from './story-quick-edit-form';
 
 // ----------------------------------------------------------------------
 
-export default function StoryTableRow({ row, selected, onEditRow, onDeleteRow, onRefreshStories }) {
+export default function StoryTableRow({
+  row,
+  selected,
+  onEditRow,
+  onDeleteRow,
+  onRefreshStories,
+  categoriesData,
+  languagesData,
+  activeAudioIndex,
+  setActiveAudioIndex,
+}) {
+  const navigate = useNavigate();
   const { title, subTitle, audios, images, createdAt } = row;
+  
+  const audioRef = useRef([]); // Single reference array for all audio elements
 
   const confirm = useBoolean();
-
   const quickEdit = useBoolean();
-
   const popover = usePopover();
+
+  // Handle audio play and pause logic
+  const handleAudioPlay = (index) => {
+    // Pause all other audios
+    audioRef.current.forEach((audio, i) => {
+      if (audio && i !== index) {
+        audio.pause();
+      }
+    });
+  
+    // Update the active audio index
+    setActiveAudioIndex(index);
+  };
+
+  // Effect to play the active audio when activeAudioIndex changes
+  useEffect(() => {
+    if (activeAudioIndex !== undefined && audioRef.current[activeAudioIndex]) {
+      audioRef.current[activeAudioIndex].play();
+    }
+  }, [activeAudioIndex]);
 
   return (
     <>
       <TableRow hover selected={selected}>
-      <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
+        <TableCell sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar
             alt={title}
-            src={images[0].fileUrl}
+            src={images[0]?.fileUrl}
             variant="rounded"
             sx={{ width: 64, height: 64, mr: 2 }}
           />
-
           <ListItemText
             disableTypography
             primary={
-              <Typography
-                noWrap
-                color="inherit"
-                variant="subtitle2"
-              >
+              <Typography noWrap color="inherit" variant="subtitle2">
                 {title}
               </Typography>
             }
             secondary={
-              <Typography
-                noWrap
-                color="inherit"
-                variant="body2"
-                sx={{ color : 'text.disabled'  }}
-              >
+              <Typography noWrap color="inherit" variant="body2" sx={{ color: 'text.disabled' }}>
                 {subTitle}
               </Typography>
             }
@@ -69,13 +91,24 @@ export default function StoryTableRow({ row, selected, onEditRow, onDeleteRow, o
         </TableCell>
 
         <TableCell>
-          <audio
+        <audio
+            key={row.id}
+            ref={(el) => {
+              if (el && !audioRef.current.includes(el)) {
+                audioRef.current[row.id] = el; // Append the reference to the array
+              }
+            }}
             controls
+            onPlay={() => handleAudioPlay(row.id)} // Pass the index for play handling
             src={audios[0]?.audio?.fileUrl}
           />
         </TableCell>
 
-         <TableCell>
+        <TableCell>
+          {audios[0]?.language?.nativeLangName}
+        </TableCell>
+
+        <TableCell>
           <ListItemText
             primary={format(new Date(createdAt), 'dd MMM yyyy')}
             secondary={format(new Date(createdAt), 'p')}
@@ -89,14 +122,9 @@ export default function StoryTableRow({ row, selected, onEditRow, onDeleteRow, o
         </TableCell>
 
         {/* <TableCell>
-          <Label
-            variant="soft"
-            color={
-              (isActive ? 'success' : 'error')
-            }        
-          >
-            {isActive ? 'Active' : 'Banned'}
-          </Label>
+          <Button onClick={() => navigate(paths.dashboard.story.questionList(row.id))} variant='contained'>
+            View Questions
+          </Button>
         </TableCell> */}
 
         <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
@@ -105,16 +133,51 @@ export default function StoryTableRow({ row, selected, onEditRow, onDeleteRow, o
               <Iconify icon="solar:pen-bold" />
             </IconButton>
           </Tooltip>
+        </TableCell>
 
-          {/* <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
+        <TableCell align="right">
+          <IconButton color={popover.open ? 'primary' : 'default'} onClick={popover.onOpen}>
             <Iconify icon="eva:more-vertical-fill" />
-          </IconButton> */}
+          </IconButton>
         </TableCell>
       </TableRow>
 
-      {/* <StoryQuickEditForm currentStory={row.id} open={quickEdit.value} onClose={quickEdit.onFalse} onRefreshStories={onRefreshStories}/> */}
-
       <CustomPopover
+        open={popover.open}
+        onClose={popover.onClose}
+        arrow="right-top"
+        sx={{ width: 160 }}
+      >
+        <MenuItem
+          onClick={() => {
+            navigate(paths.dashboard.story.questionList(row.id));
+            popover.onClose();
+          }}
+        >
+          <Iconify icon="solar:eye-bold" />
+          View Questions
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            navigate(paths.dashboard.story.commentsList(row.id));
+            popover.onClose();
+          }}
+        >
+          <Iconify icon="solar:eye-bold" />
+          View Comments
+        </MenuItem>
+      </CustomPopover>
+
+      <StoryQuickEditForm
+        currentStoryId={row.id}
+        open={quickEdit.value}
+        onClose={quickEdit.onFalse}
+        onRefreshStories={onRefreshStories}
+        categories={categoriesData}
+        languages={languagesData}
+      />
+
+      {/* <CustomPopover
         open={popover.open}
         onClose={popover.onClose}
         arrow="right-top"
@@ -140,7 +203,7 @@ export default function StoryTableRow({ row, selected, onEditRow, onDeleteRow, o
           <Iconify icon="solar:pen-bold" />
           Edit
         </MenuItem>
-      </CustomPopover>
+      </CustomPopover> */}
 
       <ConfirmDialog
         open={confirm.value}
@@ -162,5 +225,9 @@ StoryTableRow.propTypes = {
   onEditRow: PropTypes.func,
   row: PropTypes.object,
   selected: PropTypes.bool,
-  onRefreshStories: PropTypes.func
+  onRefreshStories: PropTypes.func,
+  activeAudioIndex: PropTypes.number, // Track the active audio index
+  setActiveAudioIndex: PropTypes.func, // Function to update the active audio index
+  categoriesData: PropTypes.array,
+  languagesData: PropTypes.array,
 };

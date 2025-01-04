@@ -16,11 +16,15 @@ export default function StoryEditView() {
   return (
     <Container maxWidth={settings.themeStretch ? false : 'lg'}>
       <CustomBreadcrumbs
-        heading="Edit"
+        heading="New Story"
         links={[
           {
             name: 'Dashboard',
             href: paths.dashboard.root,
+          },
+          {
+            name: 'List',
+            href: paths.dashboard.story.list,
           },
           {
             name: 'Story',

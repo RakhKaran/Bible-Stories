@@ -1,7 +1,7 @@
 import { DefaultTransactionalRepository, IsolationLevel, repository } from '@loopback/repository';
-import { UsersRepository } from '../repositories';
-import { get, getJsonSchemaRef, getModelSchemaRef, HttpErrors, param, patch, post, requestBody } from '@loopback/rest';
-import { Users } from '../models';
+import { CommentsRepository, DownloadStoriesRepository, LikedStoriesRepository, UsersRepository } from '../repositories';
+import { del, get, getJsonSchemaRef, getModelSchemaRef, HttpErrors, param, patch, post, requestBody } from '@loopback/rest';
+import {  Users } from '../models';
 import { BibleStoriesDataSource } from '../datasources';
 import { inject } from '@loopback/core';
 import { validateCredentialsForPhoneLogin } from '../services/validator';
@@ -36,6 +36,12 @@ export class UsersController {
     public firebaseAdmin: FirebaseAdmin,
     @repository(UsersRepository)
     public usersRepository: UsersRepository,
+    @repository(LikedStoriesRepository)
+    public likedStoriesRepository: LikedStoriesRepository,
+    @repository(DownloadStoriesRepository)
+    public downloadStoriesRepository: DownloadStoriesRepository,
+    @repository(CommentsRepository)
+    public commentsRepository: CommentsRepository,
   ) {
     this.passwordHasher = new BcryptHasher();
   }
@@ -64,8 +70,7 @@ export class UsersController {
   }
 
   // registration api's
-
-  // User registration API.
+  // User registration API...
   @post('/auth/register', {
     responses: {
       '200': {
@@ -95,12 +100,42 @@ export class UsersController {
       // Check if the user already exists based on phone number
       const existingUser = await this.usersRepository.findOne({
         where: {
-          or: [{ phoneNumber: userData.phoneNumber }],
+          or: [
+            { phoneNumber: userData.phoneNumber },
+          ],
         },
       });
 
       if (existingUser) {
-        throw new HttpErrors.BadRequest('User already exists');
+        if (existingUser.isUserDeleted) {
+          // Update the existing user with the new data
+          const updatedData = {
+            ...existingUser, // Retain existing properties
+            ...userData, // Override with new data
+            isUserDeleted: false, // Mark as active
+          };
+
+          // Hash the password if provided
+          if (userData.password) {
+            updatedData.password = await this.passwordHasher.hashPassword(userData.password);
+          }
+
+          // Update the user in the database
+          const updatedUser = await this.usersRepository.updateById(existingUser.id, updatedData, {
+            transaction: tx,
+          });
+
+          // Commit the transaction
+          await tx.commit();
+
+          return {
+            success: true,
+            userData: updatedData,
+            message: 'User reactivated and updated successfully',
+          };
+        } else {
+          throw new HttpErrors.BadRequest('User already exists');
+        }
       }
 
       // Validate phone number credentials
@@ -132,6 +167,7 @@ export class UsersController {
       throw err;
     }
   }
+
 
   // admin authentication api's
 
@@ -925,5 +961,77 @@ export class UsersController {
     }
   }
 
-
+  // delete user...
+  @authenticate({
+    strategy: 'jwt',
+    options: { required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER] },
+  })
+  @del('/delete-user')
+  async deleteUser(
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find the user
+      const user = await this.usersRepository.findById(currentUser.id);
+  
+      if (!user) {
+        throw new HttpErrors.BadRequest('User does not exist');
+      }
+  
+      if (user.isUserDeleted) {
+        throw new HttpErrors.BadRequest('User is already deleted');
+      }
+  
+      // Mark user as deleted
+      await this.usersRepository.updateById(user.id, 
+        { 
+          isUserDeleted: true,
+          lastName: undefined,
+          appLanguage: undefined,
+          audioLanguage: undefined,
+          isAllowingAutoplay: false,
+          isAllowingPushNotifications: false,
+        }
+      );
+  
+      // Delete related liked stories
+      await this.likedStoriesRepository.deleteAll({ usersId: user.id });
+  
+      // Delete related downloaded stories
+      await this.downloadStoriesRepository.deleteAll({ usersId: user.id });
+  
+      // Find and delete all comments and their replies recursively
+      const deleteCommentsRecursive = async (commentIds: number[]): Promise<void> => {
+        for (const commentId of commentIds) {
+          // Find replies to the current comment
+          const replies : any = await this.commentsRepository.find({
+            where: { repliedCommentId: commentId },
+          });
+  
+          if (replies.length > 0) {
+            // Recursively delete replies
+            await deleteCommentsRecursive(replies.map((reply : any) => reply.id));
+          }
+  
+          // Delete the current comment
+          await this.commentsRepository.deleteById(commentId);
+        }
+      };
+  
+      // Start by deleting all root comments of the user
+      const userComments = await this.commentsRepository.find({ where: { usersId: user.id } });
+      const userCommentIds : any = userComments.length > 0 ? userComments.map((comment) => comment.id) : [];
+  
+      if(userCommentIds.length > 0){
+        await deleteCommentsRecursive(userCommentIds);
+      }
+  
+      // Optionally, delete user's own comments as well
+      await this.commentsRepository.deleteAll({ usersId: user.id });
+  
+      return { success: true, message: 'User deleted successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }  
 }

@@ -12,7 +12,12 @@ export async function migrate(args: string[]) {
       'Users',
       'Language',
       'Category',
-      'Stories'
+      'Stories',
+      'StoriesQuestions',
+      'GeneralQuestions',
+      'Comments',
+      'LikedStories',
+      'DownloadStories',
     ],
   });
 

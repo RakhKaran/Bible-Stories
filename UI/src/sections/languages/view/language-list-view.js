@@ -30,6 +30,7 @@ import {
   TableSelectedAction,
   TablePaginationCustom,
 } from 'src/components/table';
+import { RouterLink } from 'src/routes/components';
 // api
 import { useGetLanguageList } from 'src/api/language-api/language';
 //
@@ -140,22 +141,22 @@ export default function LanguageListView() {
     <>
       <Container maxWidth={settings.themeStretch ? false : 'lg'}>
         <CustomBreadcrumbs
-          heading="List"
+          heading="Language List"
           links={[
             { name: 'Dashboard', href: paths.dashboard.root },
             { name: 'Language', href: paths.dashboard.language.root },
             { name: 'List' },
           ]}
-          // action={
-          //   <Button
-          //     component={RouterLink}
-          //     href={paths.dashboard.user.new}
-          //     variant="contained"
-          //     startIcon={<Iconify icon="mingcute:add-line" />}
-          //   >
-          //     New User
-          //   </Button>
-          // }
+          action={
+            <Button
+              component={RouterLink}
+              href={paths.dashboard.language.new}
+              variant="contained"
+              startIcon={<Iconify icon="mingcute:add-line" />}
+            >
+              New Language
+            </Button>
+          }
           sx={{
             mb: { xs: 3, md: 5 },
           }}

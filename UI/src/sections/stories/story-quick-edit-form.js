@@ -1,7 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable jsx-a11y/media-has-caption */
 import PropTypes from 'prop-types';
 import * as Yup from 'yup';
-import { useCallback, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
 import LoadingButton from '@mui/lab/LoadingButton';
@@ -14,67 +16,166 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 // components
 import { useSnackbar } from 'src/components/snackbar';
-import FormProvider, { RHFSelect, RHFTextField, RHFUpload } from 'src/components/hook-form';
-import axiosInstance from 'src/utils/axios';
-import { Stack, Typography } from '@mui/material';
+import FormProvider, { RHFSelect, RHFTextField, RHFUpload, RHFUploadAudio } from 'src/components/hook-form';
+import axiosInstance, { endpoints } from 'src/utils/axios';
+import { Stack, TableBody, TableCell, TableHead, TableRow, Typography, Table } from '@mui/material';
 
 // ----------------------------------------------------------------------
 
-export default function StoryQuickEditForm({ currentCategory, open, onClose, onRefreshCategories }) {
+export default function StoryQuickEditForm({ currentStoryId, open, onClose, onRefreshStories, categories, languages }) {
   const { enqueueSnackbar } = useSnackbar();
+  const [currentStory, setCurrentStory] = useState();
+  const categoriesData = categories;
+  const languageData = languages;
+  const [newAudio, setNewAudio] = useState({
+    language: null,
+    audio: {},
+    duration: undefined,
+  });
+  const fetchStoryById = async() => {
+    try{
+      const response = await axiosInstance.get(endpoints.stories.details(currentStoryId));
+      if(response?.data?.success){
+        setCurrentStory(response?.data?.data);
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
 
-  const NewCategorySchema = Yup.object().shape({
-    categoryName: Yup.string().required('Name is required'),
-    description: Yup.string(),
-    image: Yup.string().required('Category image is required'),
+  // story....
+  useEffect(() => {
+    if(open){
+      fetchStoryById();
+    }
+  },[open])
+
+  const NewStorySchema = Yup.object().shape({
+    title: Yup.string().required('Title is required'),
+    subTitle: Yup.string().required('Subtitle is required'),
+    category: Yup.number().required('Please select category'),
+    audios: Yup.array()
+      .of(
+        Yup.object().shape({
+          language: Yup.object().required('Language is required'),
+          audio: Yup.object().shape({
+            fileUrl: Yup.string().required('Audio file URL is required'),
+            fileName: Yup.string().required('Audio file name is required'),
+          }),
+          duration: Yup.number().required('Duration is required').min(1),
+        })
+      )
+      .required('At least one audio entry is required'),
+    images: Yup.array()
+      .of(
+        Yup.object().shape({
+          fileUrl: Yup.string().required('Image file URL is required'),
+          fileName: Yup.string().required('Image file name is required'),
+        })
+      )
+      .required('At least one image is required'),
+    // audio: Yup.object().required('Audio is required'),
+    // language : Yup.object().required('Language is required'),
+    // duration : Yup.number().required('Duration is required')
   });
 
   const defaultValues = useMemo(
     () => ({
-      categoryName: currentCategory?.categoryName || '',
-      description: currentCategory?.description || '',
-      image: currentCategory?.image?.fileUrl || null,
-      status: currentCategory?.isActive,
+      title: currentStory?.title || '',
+      subTitle: currentStory?.subTitle || '',
+      category: currentStory?.categoryId ? categoriesData.find((cat) => cat.id === currentStory.categoryId).id : undefined,
+      audios: currentStory?.audios || [],
+      images: currentStory?.images || [],
+      language: undefined,
+      audio : undefined,
+      duration: undefined
     }),
-    [currentCategory]
+    [currentStory]
   );
 
   const methods = useForm({
-    resolver: yupResolver(NewCategorySchema),
+    resolver: yupResolver(NewStorySchema),
     defaultValues,
   });
 
   const {
+    control,
     reset,
     setValue,
     handleSubmit,
+    watch,
     formState: { isSubmitting },
   } = methods;
 
+  const values = watch();
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'audios',
+  });
+
+  const handleAddNewAudio = () => {
+    if (newAudio.language && newAudio.audio && newAudio.duration) {
+      // Check if any field already exists with the same language code
+      if (fields.length > 0) {
+        const existingIndex = fields.findIndex(
+          (audio) => audio?.language?.code === newAudio.language.code
+        );
+  
+        if (existingIndex !== -1) {
+          // Update the existing audio entry
+          fields[existingIndex] = {
+            ...fields[existingIndex],
+            ...newAudio, // Merge with newAudio to update the details
+          };
+  
+          // Update the form fields with updated array
+          setValue('audios', [...fields]);
+          enqueueSnackbar('Audio updated successfully.', { variant: 'success' });
+        } else {
+          // Append the new audio entry if no match is found
+          append(newAudio);
+          enqueueSnackbar('New audio added successfully.', { variant: 'success' });
+        }
+      } else {
+        // If fields are empty, simply append
+        append(newAudio);
+        enqueueSnackbar('New audio added successfully.', { variant: 'success' });
+      }
+  
+      // Reset the form and state
+      setNewAudio({ language: null, audio: null, duration: undefined });
+      setValue('language', null);
+      setValue('audio', null);
+      setValue('duration', undefined);
+      reset({
+        ...methods.getValues(),
+      });
+    } else {
+      enqueueSnackbar('Please fill in all fields.', { variant: 'error' });
+    }
+  };
+  
   useEffect(() => {
     if (open) {
-      reset(defaultValues); // Reset form values to the latest currentCategory values
+      reset(defaultValues);
     }
-  }, [open, currentCategory, reset, defaultValues]);
+  }, [open, currentStory]);
 
   const onSubmit = handleSubmit(async (data) => {
     try {
       const inputData = {
-        categoryName : data.categoryName,
-        description : data.description,
-        isActive : data.status
-      }
+        title : data.title,
+        subTitle : data.subTitle,
+        images : data.images,
+        audios : data.audios,
+        categoryId : data.category
+      };
 
-      if (data.image) {
-        inputData.image = {
-          fileUrl: data.image,
-        };
-      }
-
-      const response = await axiosInstance.patch(`/categories/${currentCategory?.id}`, inputData);
+      const response = await axiosInstance.patch(`/stories/${currentStoryId}`, inputData);
       if(response?.data?.success){
         reset();
-        onRefreshCategories();
+        onRefreshStories();
         onClose();
         enqueueSnackbar('Update success!');
       }
@@ -88,23 +189,112 @@ export default function StoryQuickEditForm({ currentCategory, open, onClose, onR
 
   const handleDrop = useCallback(
     async (acceptedFiles) => {
-      const file = acceptedFiles[0];
-      console.log(file);
+      const images = values.images || [];
+      const newFiles = [];
+  
+      // Use Promise.all to wait for all async operations to complete
+      await Promise.all(
+        acceptedFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          try {
+            const response = await axiosInstance.post('/files', formData);
+            const { data } = response;
+            newFiles.push({
+              fileName: data?.files[0].fileName,
+              fileUrl: data?.files[0].fileUrl,
+              preview : data?.files[0].fileUrl,
+            });
+          } catch (error) {
+            console.error('Error uploading file:', error);
+            // Handle error as needed
+          }
+        })
+      );
+    
+      // Update the state or values with the array of file URLs
+      if (newFiles.length > 0) {
+        setValue('images', [...images, ...newFiles], { shouldValidate: true });
+      }
+    },
+    [setValue, values.images]
+  );
 
+  // const handleDropAudio = useCallback(
+  //   async (acceptedFiles, index) => {
+  //     const file = acceptedFiles[0];
+  //     if (file) {
+  //       const formData = new FormData();
+  //       formData.append('file', file);
+  //       const response = await axiosInstance.post('/files', formData);
+  //       const { data } = response;
+  //       setNewAudio({
+  //         ...newAudio,
+  //         audio: {
+  //           fileName: data?.files[0].fileName,
+  //           fileUrl: data?.files[0].fileUrl,
+  //         },
+  //       });
+  //       console.log('file', file);
+  //       setValue('duration', file?.length);
+  //       setValue(
+  //         `audio`,
+  //         {
+  //           fileName: data?.files[0].fileName,
+  //           fileUrl: data?.files[0].fileUrl,
+  //         },
+  //         {
+  //           shouldValidate: true,
+  //         }
+  //       );
+  //     }
+  //   },
+  //   [setValue, newAudio]
+  // );
+
+  const handleDropAudio = useCallback(
+    async (acceptedFiles, index) => {
+      const file = acceptedFiles[0];
       if (file) {
+        // Upload the file to the server
         const formData = new FormData();
         formData.append('file', file);
         const response = await axiosInstance.post('/files', formData);
         const { data } = response;
-        console.log(data);
-        setValue('image', data?.files[0].fileUrl, {
-          shouldValidate: true,
+  
+        // Set audio details
+        const fileUrl = data?.files[0]?.fileUrl;
+        // Fetch audio duration
+        const audio = new Audio(fileUrl);
+        audio.addEventListener('loadedmetadata', () => {
+          const {duration} = audio; // Duration in seconds
+  
+          // Set duration in form
+          setValue('duration', duration);
+          setValue(
+            `audio`,
+            {
+              fileName: data?.files[0]?.fileName,
+              fileUrl,
+            },
+            {
+              shouldValidate: true,
+            }
+          );
+          setNewAudio({
+            ...newAudio,
+            audio: {
+              fileName: data?.files[0]?.fileName,
+              fileUrl,
+            },
+            duration 
+          });
         });
       }
     },
-    [setValue]
+    [setValue, newAudio]
   );
-
+  
   return (
     <Dialog
       fullWidth
@@ -129,26 +319,138 @@ export default function StoryQuickEditForm({ currentCategory, open, onClose, onR
               sm: 'repeat(1, 1fr)',
             }}
           >
-            <RHFSelect name="status" label="Status">
-              <MenuItem value>
-                Active
-              </MenuItem>
-              <MenuItem value={false}>
-                Not Active
-              </MenuItem>
+           <RHFTextField name="title" label="Title" />
+            <RHFTextField name="subTitle" label="Subtitle" />
+            <RHFSelect name="category" label="Category">
+              {categoriesData.length > 0 &&
+                categoriesData.map((category) => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.categoryName}
+                  </MenuItem>
+                ))}
             </RHFSelect>
-
-            <RHFTextField name="categoryName" label="Category Name" />
-            <RHFTextField name="description" label="Description" multiline rows={3} />
             <Stack spacing={1.5}>
-              <Typography variant="subtitle2">Category Image</Typography>
+              <Typography variant="subtitle2">Images</Typography>
               <RHFUpload
-                name="image"
+                multiple
+                name="images"
                 maxSize={3145728}
+                thumbnail
                 onDrop={handleDrop}
+                onRemove={(inputFile) =>
+                  setValue(
+                    'images',
+                    values.images &&
+                      values.images?.filter((file) => file !== inputFile),
+                    { shouldValidate: true }
+                  )
+                }
+                onRemoveAll={() => setValue('images', [], { shouldValidate: true })}
               />
             </Stack>
+            <Typography variant="subtitle2">Audios</Typography>
+            <Stack spacing={2}>
+              <Stack spacing={2}>
+                <RHFSelect
+                  name="language"
+                  label="Language"
+                  onChange={(e) => setNewAudio({ ...newAudio, language: e.target.value })}
+                >
+                  {languageData.length > 0 &&
+                    languageData.map((lang) => (
+                      <MenuItem key={lang.id} value={lang}>
+                        {`${lang.langName} (${lang.nativeLangName})`}
+                      </MenuItem>
+                    ))}
+                </RHFSelect>
+                <RHFUploadAudio name="audio" onDrop={(files) => handleDropAudio(files)} />
+                {/* <RHFTextField
+                  name="duration"
+                  label="Duration (in seconds)"
+                  type="number"
+                  onChange={(e) => setNewAudio({ ...newAudio, duration: e.target.value })}
+                /> */}
+                {/* <LoadingButton
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    setNewAudio({ 
+                      language: newAudio.language, 
+                      audio: {}, 
+                      duration: undefined 
+                    });
+                    setValue('language', undefined);
+                    setValue('audio', null);
+                    setValue('duration', undefined);
+                  }}
+                >
+                  Remove Audio
+                </LoadingButton> */}
+              </Stack>
+              <LoadingButton variant="contained" onClick={() => handleAddNewAudio()}>
+                Add Audio
+              </LoadingButton>
+            </Stack>
           </Box>
+          <Table>
+              <TableHead sx={{mt:'10px'}}>
+                <TableRow>
+                  <TableCell sx={{ textAlign: 'center' }}>Language</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>Audio</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {fields.map(
+                  (audio, index) =>
+                    audio.language && audio.audio.fileUrl && (
+                      <TableRow key={index}>
+                        <TableCell sx={{ textAlign: 'center' }}>{audio?.language?.langName}</TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <audio controls src={audio?.audio?.fileUrl} preload="metaData" />
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <Button
+                            sx={{
+                              backgroundColor: 'orange',
+                              borderColor: 'orange',
+                              outlineColor: 'orange',
+                              color: 'white',
+                              mr:'4px'
+                            }}
+                            variant="contained"
+                            onClick={() => {
+                              // Set the selected audio data for editing
+                              setNewAudio({
+                                language: audio.language,
+                                audio: audio.audio,
+                                duration: audio.duration,
+                              });
+                              setValue('audio', audio.audio);
+                              setValue('duration', audio.duration);
+                              setValue('language', audio.language);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            sx={{
+                              backgroundColor: 'red',
+                              borderColor: 'red',
+                              outlineColor: 'red',
+                              color: 'white',
+                            }}
+                            variant="contained"
+                            onClick={() => remove(index)}
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                )}
+              </TableBody>
+            </Table>
         </DialogContent>
 
         <DialogActions>
@@ -166,8 +468,10 @@ export default function StoryQuickEditForm({ currentCategory, open, onClose, onR
 }
 
 StoryQuickEditForm.propTypes = {
-  currentCategory: PropTypes.object,
+  currentStoryId: PropTypes.number,
   onClose: PropTypes.func,
   open: PropTypes.bool,
-  onRefreshCategories: PropTypes.func
+  onRefreshStories: PropTypes.func,
+  categories: PropTypes.array,
+  languages: PropTypes.array
 };

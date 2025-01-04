@@ -68,6 +68,21 @@ export const endpoints = {
   // stories api endpoints..
   stories: {
     list: '/story-list',
-    details: (storyId) => `/story-by-id-admin/{storyId}/${storyId}`
-  }
+    details: (storyId) => `/story-by-id-admin/${storyId}`
+  },
+  // stories questions api endpoints..
+  storyQuestions: {
+    list:(storyId) => `/story-question-list/${storyId}`,
+    details: (questionId) => `/story-question-by-id-admin/${questionId}`
+  },
+  // general questions api endpoints..
+  generalQuestions: {
+    list:(storyId) => `/question-list`,
+    details: (questionId) => `/question-by-id-admin/${questionId}`
+  },
+  // comments api endpoints..
+  comments: {
+    list: (storyId, limit, skip) => `/comments/${storyId}?limit=${limit}&skip=${skip}`,
+    replyList: (commentId, limit, skip) => `/comment-replies/${commentId}?limit=${limit}&skip=${skip}`
+  },
 };
