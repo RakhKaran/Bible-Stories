@@ -29,31 +29,41 @@ export class DownloadStoriesController{
     @param.path.number('storyId') storyId : number
   ) : Promise<{success : boolean, message : string}>{
     try{
-      const downloadStory = await this.downloadStoriesRepository.findOne({
-        where : {
-          usersId : currentUser.id,
-          storiesId : storyId
-        }
-      });
+      // const downloadStory = await this.downloadStoriesRepository.findOne({
+      //   where : {
+      //     usersId : currentUser.id,
+      //     storiesId : storyId
+      //   }
+      // });
 
-      if(!downloadStory){
-        const data = {
-          usersId : currentUser.id,
-          storiesId : storyId
-        };
-        await this.downloadStoriesRepository.create(data);
+      // if(!downloadStory){
+      //   const data = {
+      //     usersId : currentUser.id,
+      //     storiesId : storyId
+      //   };
+      //   await this.downloadStoriesRepository.create(data);
 
-        return{
-          success : true,
-          message : 'Story downloaded successfully'
-        }
-      }else{
-        await this.downloadStoriesRepository.deleteById(downloadStory.id);
+      //   return{
+      //     success : true,
+      //     message : 'Story downloaded successfully'
+      //   }
+      // }else{
+      //   await this.downloadStoriesRepository.deleteById(downloadStory.id);
 
-        return{
-          success : true,
-          message : 'Story removed from downloads successfully'
-        }
+      //   return{
+      //     success : true,
+      //     message : 'Story removed from downloads successfully'
+      //   }
+      // }
+      const data = {
+        usersId : currentUser.id,
+        storiesId : storyId
+      };
+      await this.downloadStoriesRepository.create(data);
+
+      return{
+        success : true,
+        message : 'Story downloaded successfully'
       }
     }catch(error){
       throw error;

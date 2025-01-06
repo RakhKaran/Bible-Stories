@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 // @mui
 import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
@@ -11,6 +12,7 @@ import Typography from '@mui/material/Typography';
 // } from 'src/_mock';
 // components
 import { useSettingsContext } from 'src/components/settings';
+import axiosInstance from 'src/utils/axios';
 //
 // import AnalyticsNews from '../analytics-news';
 // import AnalyticsTasks from '../analytics-tasks';
@@ -26,6 +28,25 @@ import AnalyticsWidgetSummary from '../analytics-widget-summary';
 
 export default function OverviewAnalyticsView() {
   const settings = useSettingsContext();
+  const [blockData, setBlockData] = useState();
+
+  const fetchBlockData = async() => {
+    try{
+      const response = await axiosInstance.get('/analytics-blocks');
+
+      if(response?.data?.success){
+        setBlockData(response?.data?.data);
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  useEffect(() => {
+    fetchBlockData();
+  },[])
+
+  console.log('blockData', blockData);
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
@@ -41,16 +62,8 @@ export default function OverviewAnalyticsView() {
       <Grid container spacing={3}>
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Weekly Sales"
-            total={714000}
-            icon={<img alt="icon" src="/assets/icons/glass/ic_glass_bag.png" />}
-          />
-        </Grid>
-
-        <Grid xs={12} sm={6} md={3}>
-          <AnalyticsWidgetSummary
-            title="New Users"
-            total={1352831}
+            title="Users"
+            total={blockData?.usersCount}
             color="info"
             icon={<img alt="icon" src="/assets/icons/glass/ic_glass_users.png" />}
           />
@@ -58,19 +71,27 @@ export default function OverviewAnalyticsView() {
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Item Orders"
-            total={1723315}
-            color="warning"
-            icon={<img alt="icon" src="/assets/icons/glass/ic_glass_buy.png" />}
+            title="Guest Users"
+            total={blockData?.guestUsersCount}
+            icon={<img alt="icon" src="/assets/icons/glass/ic_glass_guest_users.png" />}
           />
         </Grid>
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Bug Reports"
-            total={234}
+            title="Stories"
+            total={blockData?.storiesCount}
+            color="warning"
+            icon={<img alt="icon" src="/assets/icons/glass/ic_glass_stories.png" />}
+          />
+        </Grid>
+
+        <Grid xs={12} sm={6} md={3}>
+          <AnalyticsWidgetSummary
+            title="Languages"
+            total={blockData?.languageCount}
             color="error"
-            icon={<img alt="icon" src="/assets/icons/glass/ic_glass_message.png" />}
+            icon={<img alt="icon" src="/assets/icons/glass/ic_glass_language.png" />}
           />
         </Grid>
 

@@ -9,3 +9,7 @@ export * from './stories-questions.controller';
 export * from './comments.controller';
 export * from './liked-stories.controller';
 export * from './download-stories.controller';
+export * from './analytics.controller';
+export * from './audio-history-users.controller';
+export * from './audio-history-stories.controller';
+export * from './audio-history.controller';

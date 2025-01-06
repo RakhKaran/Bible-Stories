@@ -48,6 +48,12 @@ export class Users extends Entity {
 
   @property({
     type: 'string',
+    // required: true
+  })
+  zipCode: string;
+
+  @property({
+    type: 'string',
     // required : true
   })
   state: string;
