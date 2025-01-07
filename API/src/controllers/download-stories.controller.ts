@@ -18,7 +18,7 @@ export class DownloadStoriesController{
     public usersRepository : UsersRepository,
   ) {}
 
-  // download or delete from download story...
+  // download story...
   @authenticate({
     strategy : 'jwt',
     options : [PermissionKeys.ADMIN, PermissionKeys.LISTENER]
