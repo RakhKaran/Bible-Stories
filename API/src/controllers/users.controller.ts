@@ -900,7 +900,7 @@ export class UsersController {
       }
 
       await this.usersRepository.updateById(currentUser.id, {
-        isAllowingPushNotifications : pushNotification ? pushNotification : userData.isAllowingPushNotifications,
+        isAllowingPushNotifications : (pushNotification !== null || pushNotification !== undefined) ? pushNotification : userData.isAllowingPushNotifications,
       });
 
       return{
@@ -948,7 +948,7 @@ export class UsersController {
       }
 
       await this.usersRepository.updateById(currentUser.id, {
-        isAllowingAutoplay : autoplay ? autoplay : userData.isAllowingAutoplay,
+        isAllowingAutoplay : (autoplay !== null || autoplay !== undefined) ? autoplay : userData.isAllowingAutoplay,
       });
 
       return{

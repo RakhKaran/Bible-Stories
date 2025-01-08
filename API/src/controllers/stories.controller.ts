@@ -247,8 +247,8 @@ export class StoriesController {
 
       let isDownload = false;
 
-      // if user is presen but not selected language and app language
-      if(user && !user.audioLanguage && !user.appLanguage){
+      // checking whether story is liked or not...
+      if(user){
         const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
 
         if(likedStory){
