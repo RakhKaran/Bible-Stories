@@ -77,32 +77,47 @@ export class DownloadStoriesController{
   })
   @get('/downloadStories')
   async downloadStories(
-    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
+    @param.query.string('search') search?: string, // Optional search query parameter
+    @param.query.number('skip') skip: number = 0,   // Optional pagination, default is 0
+    @param.query.number('limit') limit: number = 10  // Optional pagination, default is 10
   ): Promise<{ success: boolean; message: string; data: LikedStories[] }> {
     try {
       const user = await this.usersRepository.findById(currentUser.id);
   
-      // users downloaded stories..
-      const downloadedStories = await this.downloadStoriesRepository.find({
+      // Build the filter object
+      const filter: any = {
         where: {
           usersId: currentUser.id,
         },
         include: [
-          { relation: 'stories' },
+          {
+            relation: 'stories',
+            scope: {
+              where: search
+                ? { title: { like: `%${search}%` } } // Search for the title in the 'stories' relation
+                : undefined,
+            },
+          },
         ],
-      });
+        skip,   // Skips the first 'skip' records
+        limit,  // Limits the number of records returned to 'limit'
+      };
   
-      let filteredStories: any = downloadedStories;
+      // Fetch downloaded stories with the constructed filter
+      const downloadedStories = await this.downloadStoriesRepository.find(filter);
   
-      // Check if user exists and has an audio language preference
+      // Filter out downloaded stories that have an empty 'stories' relation
+      const filteredDownloadedStories = downloadedStories.filter((downloadedStory: any) => downloadedStory.stories);
+  
+      let filteredStories: any = filteredDownloadedStories;
+  
       if (user && user.audioLanguage) {
-        // Filter stories to include only audio matching the user's selected language
-        filteredStories = downloadedStories.map((story: any) => {
+        filteredStories = filteredDownloadedStories.map((story: any) => {
           const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
             audio?.language?.id === user.audioLanguage
           );
   
-          // if any story is not available in that audio language
           const fallbackAudios = filteredAudios.length
             ? filteredAudios
             : story?.stories?.audios?.filter((audio: any) => audio?.language?.code === 'en');
@@ -111,21 +126,16 @@ export class DownloadStoriesController{
             ...story,
             stories: {
               ...story.stories,
-              audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+              audios: fallbackAudios,
             },
           };
         });
-      }
-  
-      // user exists but audio language yet not set, then try to compare with app language...
-      else if (user && !user.audioLanguage && user.appLanguage) {
-        // Filter stories to include only audio matching the user's selected language
-        filteredStories = downloadedStories.map((story : any) => {
+      } else if (user && !user.audioLanguage && user.appLanguage) {
+        filteredStories = filteredDownloadedStories.map((story: any) => {
           const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
             audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
           );
   
-          // if any story is not available in that audio language
           const fallbackAudios = filteredAudios.length
             ? filteredAudios
             : story?.stories?.audios?.filter((audio: any) => audio?.language?.code === 'en');
@@ -134,16 +144,12 @@ export class DownloadStoriesController{
             ...story,
             stories: {
               ...story.stories,
-              audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+              audios: fallbackAudios,
             },
           };
         });
-      }
-  
-      // returning english language audio file...
-      else {
-        // Filter stories to include only audio matching the user's selected language
-        filteredStories = downloadedStories.map((story : any) => {
+      } else {
+        filteredStories = filteredDownloadedStories.map((story: any) => {
           const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
             audio?.language?.code === 'en'
           );
@@ -152,7 +158,7 @@ export class DownloadStoriesController{
             ...story,
             stories: {
               ...story.stories,
-              audios: filteredAudios, // Replace audios array with the filtered or fallback one
+              audios: filteredAudios,
             },
           };
         });
@@ -160,12 +166,13 @@ export class DownloadStoriesController{
   
       return {
         success: true,
-        message: 'download stories retrieved successfully.',
+        message: 'Downloaded stories retrieved successfully.',
         data: filteredStories,
       };
     } catch (error) {
       throw error;
     }
   }
+  
 }
 
