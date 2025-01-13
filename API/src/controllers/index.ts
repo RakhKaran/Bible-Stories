@@ -15,3 +15,4 @@ export * from './audio-history-stories.controller';
 export * from './audio-history.controller';
 export * from './audiohistory.controller';
 export * from './audio-history-language.controller';
+export * from './guest-user.controller';

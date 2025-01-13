@@ -18,7 +18,8 @@ export async function migrate(args: string[]) {
       'Comments',
       'LikedStories',
       'DownloadStories',
-      'AudioHistory'
+      'AudioHistory',
+      'GuestUsers'
     ],
   });
 

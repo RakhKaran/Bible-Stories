@@ -8,3 +8,4 @@ export * from './comments.model';
 export * from './liked-stories.model';
 export * from './download-stories.model';
 export * from './audio-history.model';
+export * from './guest-users.model';

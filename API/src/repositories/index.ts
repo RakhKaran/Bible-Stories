@@ -8,3 +8,4 @@ export * from './comments.repository';
 export * from './liked-stories.repository';
 export * from './download-stories.repository';
 export * from './audio-history.repository';
+export * from './guest-users.repository';
