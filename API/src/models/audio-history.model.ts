@@ -1,6 +1,7 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {Users} from './users.model';
 import {Stories} from './stories.model';
+import {Language} from './language.model';
 
 @model()
 export class AudioHistory extends Entity {
@@ -10,20 +11,21 @@ export class AudioHistory extends Entity {
     generated: true,
   })
   id?: number;
-  
+
   @belongsTo(() => Users)
   usersId: number;
 
   @belongsTo(() => Stories)
   storiesId: number;
 
-  @property({
-    type: 'object'
-  })
-  language: object;
+  @belongsTo(() => Language, {name: 'languageData'})
+  language: number;
 
   @property({
     type: 'number',
+    mysql: {
+      columnType: 'DECIMAL(10,8)', // For MySQL/MariaDB.
+    },
     default: 0
   })
   lastDuration: number;
@@ -36,15 +38,12 @@ export class AudioHistory extends Entity {
 
   @property({
     type: 'number',
+    mysql: {
+      columnType: 'DECIMAL(10,8)',
+    },
     default: 0
   })
-  cumulativeListeningCount: 0;
-
-  @property({
-    type: 'boolean',
-    default : false
-  })
-  isCompleted: boolean;
+  cumulativeListeningDuration: number;
 
   @property({
     type: 'date',

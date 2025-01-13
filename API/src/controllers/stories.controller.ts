@@ -1,5 +1,5 @@
 import { DefaultTransactionalRepository, IsolationLevel, repository } from "@loopback/repository";
-import { CategoryRepository, DownloadStoriesRepository, LikedStoriesRepository, StoriesRepository, UsersRepository } from "../repositories";
+import { AudioHistoryRepository, CategoryRepository, DownloadStoriesRepository, LikedStoriesRepository, StoriesRepository, UsersRepository } from "../repositories";
 import { get, getJsonSchemaRef, getModelSchemaRef, HttpErrors, param, patch, post, Request, requestBody, response, RestBindings } from "@loopback/rest";
 import { Stories } from "../models";
 import { BibleStoriesDataSource } from "../datasources";
@@ -23,6 +23,8 @@ export class StoriesController {
     public likedStoriesRepository : LikedStoriesRepository,
     @repository(DownloadStoriesRepository)
     public downloadStoriesRepository : DownloadStoriesRepository,
+    @repository(AudioHistoryRepository)
+    public audioHistoryRepository : AudioHistoryRepository,
     @inject('service.jwt.service')
     public jwtService: JWTService,
   ) {}
@@ -241,11 +243,13 @@ export class StoriesController {
         user = await this.usersRepository.findById(currentUser.id);
       }
 
-      let filteredAudios = story.audios;
+      let filteredAudios : any = story.audios;
 
       let isLiked = false;
 
       let isDownload = false;
+
+      let lastDuration = 0;
 
       // checking whether story is liked or not...
       if(user){
@@ -255,42 +259,62 @@ export class StoriesController {
           isLiked = true;
         }
       }
-
       if (user && user.audioLanguage) {
-        // Filter by user's audio language, fallback to English if not found
+        // Filter first by user's audio language
         filteredAudios = story.audios.filter(
-          (audio: any) =>
-            audio.language.id === user.audioLanguage || audio.language.code === 'en'
+          (audio: any) => audio.language.id === user.audioLanguage
         );
-
-        const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
-
-        if(likedStory){
+      
+        // If no audio matches the user's audio language, fallback to English
+        if (filteredAudios.length === 0) {
+          filteredAudios = story.audios.filter(
+            (audio: any) => audio.language.code === 'en'
+          );
+        }
+      
+        console.log('filteredaudios', filteredAudios);
+      
+        const likedStory = await this.likedStoriesRepository.findOne({
+          where: { usersId: user.id, storiesId: story.id },
+        });
+      
+        if (likedStory) {
           isLiked = true;
         }
-
-        const downloadStory = await this.downloadStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
-
-        if(downloadStory){
+      
+        const downloadStory = await this.downloadStoriesRepository.findOne({
+          where: { usersId: user.id, storiesId: story.id },
+        });
+      
+        if (downloadStory) {
           isDownload = true;
         }
       } else if (user && !user.audioLanguage && user.appLanguage) {
-        // Filter by user's app language, fallback to English
+        // Similar logic for app language, prioritize app language first
         filteredAudios = story.audios.filter(
           (audio: any) =>
-            audio.language.langName?.toLowerCase() === user.appLanguage?.toLowerCase() ||
-            audio.language.code === 'en'
+            audio.language.langName?.toLowerCase() === user.appLanguage?.toLowerCase()
         );
-
-        const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
-
-        if(likedStory){
+      
+        if (filteredAudios.length === 0) {
+          filteredAudios = story.audios.filter(
+            (audio: any) => audio.language.code === 'en'
+          );
+        }
+      
+        const likedStory = await this.likedStoriesRepository.findOne({
+          where: { usersId: user.id, storiesId: story.id },
+        });
+      
+        if (likedStory) {
           isLiked = true;
         }
-
-        const downloadStory = await this.downloadStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
-
-        if(downloadStory){
+      
+        const downloadStory = await this.downloadStoriesRepository.findOne({
+          where: { usersId: user.id, storiesId: story.id },
+        });
+      
+        if (downloadStory) {
           isDownload = true;
         }
       } else {
@@ -298,13 +322,32 @@ export class StoriesController {
         filteredAudios = story.audios.filter(
           (audio: any) => audio.language.code === 'en'
         );
+      }      
+
+      if(user){
+        console.log(user);
+        console.log(filteredAudios);
+        const audioHistory = await this.audioHistoryRepository.findOne({
+          where : {
+            usersId : user.id,
+            storiesId : story.id,
+            language : filteredAudios[0].language?.id
+          }
+        });
+
+        console.log(audioHistory);
+
+        if(audioHistory){
+          lastDuration = audioHistory.lastDuration
+        }
       }
 
       const filteredStory = {
         ...story,
         audios: filteredAudios,
         isLiked,
-        isDownload
+        isDownload,
+        lastDuration
       };
 
       return {
