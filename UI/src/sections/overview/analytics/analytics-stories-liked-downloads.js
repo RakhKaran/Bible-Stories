@@ -122,7 +122,8 @@ export default function AnalyticsLikedAndDownloadSummary({ likedStoriesData, dow
   const downloadedStories = downloadStoriesData.map(item => formatStory(item.story, 0, item.downloadCount));
 
   return (
-    <Grid container spacing={4}>
+    
+    <Grid container spacing={4}> 
       {/* Most Liked Stories Table */}
      {likedStories.length > 0 && 
         <Grid item xs={12} md={6}>
