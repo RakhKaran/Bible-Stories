@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 // @mui
 import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
@@ -20,6 +21,8 @@ import AnalyticsCurrentVisits from '../analytics-current-visits';
 // import AnalyticsOrderTimeline from '../analytics-order-timeline';
 import AnalyticsWebsiteVisits from '../analytics-website-visits';
 import AnalyticsWidgetSummary from '../analytics-widget-summary';
+import AnalyticsTopListenersSummary from '../anayltics-top-listners';
+import AnalyticsLikedAndDownloadSummary from '../analytics-stories-liked-downloads';
 // import AnalyticsTrafficBySite from '../analytics-traffic-by-site';
 // import AnalyticsCurrentSubject from '../analytics-current-subject';
 // import AnalyticsConversionRates from '../analytics-conversion-rates';
@@ -28,7 +31,12 @@ import AnalyticsWidgetSummary from '../analytics-widget-summary';
 
 export default function OverviewAnalyticsView() {
   const settings = useSettingsContext();
+  const navigate = useNavigate();
   const [blockData, setBlockData] = useState();
+  const [topListenersData, setTopListenersData] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [likedStoriesData, setLikedStoriesData] = useState([]);
+  const [downloadStoriesData, setDownloadStoriesData] = useState([]);
 
   const fetchBlockData = async() => {
     try{
@@ -42,9 +50,51 @@ export default function OverviewAnalyticsView() {
     }
   }
 
+  const fetchTopListners = async(timePeriod) => {
+    try{
+      const response = await axiosInstance.get(`/top-listeners?timePeriod=${timePeriod}`);
+
+      if(response?.data?.success){
+        setTopListenersData(response?.data?.data);
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  const fetchMostLikedStories = async() => {
+    try{
+      const response = await axiosInstance.get('/most-liked-stories');
+
+      if(response?.data?.success){
+        setLikedStoriesData(response?.data?.data);
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  const fetchMostDownloadStories = async() => {
+    try{
+      const response = await axiosInstance.get('/most-download-stories');
+
+      if(response?.data?.success){
+        setDownloadStoriesData(response?.data?.data);
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     fetchBlockData();
+    fetchMostLikedStories();
+    fetchMostDownloadStories();
   },[])
+
+  useEffect(() => {
+      fetchTopListners(filter);
+  },[filter])
 
   console.log('blockData', blockData);
 
@@ -62,6 +112,7 @@ export default function OverviewAnalyticsView() {
       <Grid container spacing={3}>
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
+            onClick={() => navigate('user/list')}
             title="Users"
             total={blockData?.usersCount}
             color="info"
@@ -79,6 +130,7 @@ export default function OverviewAnalyticsView() {
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
+            onClick={() => navigate('story/list')}
             title="Stories"
             total={blockData?.storiesCount}
             color="warning"
@@ -88,6 +140,7 @@ export default function OverviewAnalyticsView() {
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
+            onClick={() => navigate('language/list')}
             title="Languages"
             total={blockData?.languageCount}
             color="error"
@@ -150,6 +203,18 @@ export default function OverviewAnalyticsView() {
             }}
           />
         </Grid>
+
+        {topListenersData.length > 0 && 
+          <Grid xs={12} md={12} lg={12}>
+            <AnalyticsTopListenersSummary data={topListenersData} filter={filter} setFiler={setFilter}/>
+          </Grid>
+        }
+
+        {(likedStoriesData.length < 0 || downloadStoriesData.length > 0) &&
+          <Grid xs={12} md={12} lg={12}>
+            <AnalyticsLikedAndDownloadSummary likedStoriesData={likedStoriesData} downloadStoriesData={downloadStoriesData}/>
+          </Grid>
+        }
 
         {/* <Grid xs={12} md={6} lg={8}>
           <AnalyticsConversionRates

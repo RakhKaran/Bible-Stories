@@ -960,6 +960,53 @@ export class UsersController {
     }
   }
 
+  // Setting FCMToken...
+  @authenticate({
+    strategy: 'jwt',
+    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+  })
+  @post('/users/set-fcmToken')
+  async setUsersFcmToken(
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser : UserProfile,
+    @requestBody({
+      content : {
+        'application/json' : {
+          schema : {
+            type : 'object',
+            properties : {
+              fcmToken : {
+                type : 'string',
+                description : 'FCM Token For sending notifications'
+              }
+            }
+          }
+        }
+      }
+    })
+    requestBody : {
+      fcmToken : string;
+    }
+  ) : Promise<{success : boolean, message : string}>{
+    try{
+      const { fcmToken } = requestBody;
+
+      const user = await this.usersRepository.findById(currentUser.id);
+
+      if(!user){
+        throw new HttpErrors.BadRequest('User not found');
+      }
+
+      await this.usersRepository.updateById(user.id, {fcmToken : fcmToken});
+
+      return{
+        success : true,
+        message : "FCM token set successfully"
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
   // delete user...
   @authenticate({
     strategy: 'jwt',

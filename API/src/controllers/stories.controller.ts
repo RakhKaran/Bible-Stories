@@ -392,41 +392,41 @@ export class StoriesController {
   }
 
 
-  // testing only...
-  @get('/get-user-details')
-  async getUserDetails(
-    @inject(RestBindings.Http.REQUEST) request: Request
-  ) : Promise<{success : boolean, message : string}>{
-    try{
-      const authHeader = request.headers.authorization;
+  // // testing only...
+  // @get('/get-user-details')
+  // async getUserDetails(
+  //   @inject(RestBindings.Http.REQUEST) request: Request
+  // ) : Promise<{success : boolean, message : string}>{
+  //   try{
+  //     const authHeader = request.headers.authorization;
 
-      if(authHeader){
-        const parts = authHeader.split(' ');
-        if(parts.length !== 2){
-          throw new HttpErrors.NotFound('parts...');
-        }
-        const token = parts[1]; 
-        console.log('token',token);
-        const decodedToken = await this.jwtService.verifyToken(token);
+  //     if(authHeader){
+  //       const parts = authHeader.split(' ');
+  //       if(parts.length !== 2){
+  //         throw new HttpErrors.NotFound('parts...');
+  //       }
+  //       const token = parts[1]; 
+  //       console.log('token',token);
+  //       const decodedToken = await this.jwtService.verifyToken(token);
 
-        console.log('userprofile',decodedToken);
+  //       console.log('userprofile',decodedToken);
 
-        return{
-          success : true,
-          message : 'working....'
-        }
-      }else{
+  //       return{
+  //         success : true,
+  //         message : 'working....'
+  //       }
+  //     }else{
 
-        console.log('auth header is missing')
-        return{
-          success : false,
-          message : 'not working'
-        }
-      }
-    }catch(error){
-      throw error;
-    }
-  }
+  //       console.log('auth header is missing')
+  //       return{
+  //         success : false,
+  //         message : 'not working'
+  //       }
+  //     }
+  //   }catch(error){
+  //     throw error;
+  //   }
+  // }
 
   // audio-list with categories...
   @get('/home-page-audio-list')

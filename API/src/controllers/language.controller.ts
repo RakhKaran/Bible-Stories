@@ -1,6 +1,6 @@
 import { DefaultTransactionalRepository, IsolationLevel, repository } from "@loopback/repository";
 import { LanguageRepository } from "../repositories";
-import { get, getJsonSchemaRef, getModelSchemaRef, param, patch, post, requestBody } from "@loopback/rest";
+import { get, getJsonSchemaRef, getModelSchemaRef, HttpErrors, param, patch, post, requestBody } from "@loopback/rest";
 import { Language } from "../models";
 import { BibleStoriesDataSource } from "../datasources";
 import { inject } from "@loopback/core";
@@ -66,7 +66,7 @@ export class LanguageController {
   })
   @patch('/update-language/{languageId}')
   async updateLanguageById(
-    @param.path.number('languageId') langId : number,
+    @param.path.number('languageId') langId: number,
     @requestBody({
       content: {
         'application/json': {
@@ -75,24 +75,43 @@ export class LanguageController {
       },
     })
     languageData: Language,
-  ) : Promise<object> {
-    try{
+  ): Promise<object> {
+    try {
       const langData = await this.languageRepository.findById(langId);
 
-      if(!langData){
-        return{
-          success : false,
-          message : 'No language found for given id'
-        }
+      if (!langData) {
+        return {
+          success: false,
+          message: 'No language found for the given id',
+        };
       }
 
-      await this.languageRepository.updateById(langData.id, languageData);
+      // Check if another language with the same langName, nativeLangName, or code already exists (except the current one)
+      const duplicateLanguage = await this.languageRepository.findOne({
+        where: {
+          and: [
+            {id: {neq: langId}}, // Exclude the current language from the check
+            {
+              or: [
+                { langName: languageData.langName },
+                { nativeLangName: languageData.nativeLangName },
+                { code: languageData.code },
+              ],
+            },
+          ],
+        },
+      });
 
-      return{
-        success : true,
-        message : 'Language Data updated'
+      if (duplicateLanguage) {
+        throw new HttpErrors.BadRequest('A language with the same name, native name, or code already exists.');
       }
-    }catch(error){
+
+      await this.languageRepository.updateById(langId, languageData);
+      return {
+        success: true,
+        message: 'Language Data updated',
+      };
+    } catch (error) {
       throw error;
     }
   }

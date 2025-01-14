@@ -13,6 +13,7 @@ export class GuestUserController {
     public guestUsersRepository: GuestUsersRepository
   ) {}
 
+  // guest user api for storing users android id or identifierByVendor for ios...
   @post('/auth/guest-user')
   async verifyGuestUser(
     @requestBody({

@@ -45,6 +45,7 @@ const ICONS = {
   category: icon('ic_categories'),
   story: icon('ic_story'),
   question: icon('ic_conversations'),
+  notification: icon('ic_notifications')
 };
 
 // ----------------------------------------------------------------------
@@ -122,6 +123,16 @@ export function useNavData() {
               { title: t('New question'), path: paths.dashboard.question.new },
             ],
           },
+          // PUSH NOTIFICATIONS
+          // {
+          //   title: t('push notifications'),
+          //   path: paths.dashboard.question.root,
+          //   icon: ICONS.notification,
+          //   children: [
+          //     { title: t('list'), path: paths.dashboard.question.list },
+          //     { title: t('New notification'), path: paths.dashboard.question.new },
+          //   ],
+          // }
         ],
       },
     ],

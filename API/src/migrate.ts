@@ -19,7 +19,8 @@ export async function migrate(args: string[]) {
       'LikedStories',
       'DownloadStories',
       'AudioHistory',
-      'GuestUsers'
+      'GuestUsers',
+      'PushNotifications'
     ],
   });
 

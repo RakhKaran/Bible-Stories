@@ -16,6 +16,7 @@ export default function AnalyticsWidgetSummary({
   title,
   total,
   icon,
+  onClick,
   color = 'primary',
   sx,
   ...other
@@ -24,6 +25,7 @@ export default function AnalyticsWidgetSummary({
 
   return (
     <Stack
+      onClick={onClick}
       alignItems="center"
       sx={{
         ...bgGradient({
@@ -57,4 +59,5 @@ AnalyticsWidgetSummary.propTypes = {
   sx: PropTypes.object,
   title: PropTypes.string,
   total: PropTypes.number,
+  onClick: PropTypes.func,
 };

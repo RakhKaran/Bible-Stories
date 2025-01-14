@@ -27,6 +27,7 @@ import {EmailService} from './services/email.service';
 import { FirebaseAdmin } from './services/firebase.service';
 import {SyncProductCron} from './services/cronjob.service';
 import {ExcelImportService} from './services/excel-import.service';
+import { NotificationService } from './services/notification.service';
 
 export {ApplicationConfig};
 
@@ -75,6 +76,7 @@ export class BibleStoriesApplication extends BootMixin(
     this.bind('service.firebase-admin').toClass(FirebaseAdmin);
     this.bind(EmailManagerBindings.SEND_MAIL).toClass(EmailService);
     this.bind('service.cronjob.service').toClass(SyncProductCron);
+    this.bind('services.notification.service').toClass(NotificationService)
   }
 
   protected configureFileUpload(destination?: string) {

@@ -104,6 +104,11 @@ export class Users extends Entity {
   @property({
     type: 'string',
   })
+  fcmToken: string;
+
+  @property({
+    type: 'string',
+  })
   otp?: string;
 
   @property({
