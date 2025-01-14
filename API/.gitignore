@@ -68,3 +68,9 @@ typings/
 
 # Emacs auto-save file
 \#*#
+
+# service account creds of firebase
+API/src/services/bibleStoriesFCM.json
+
+# Alternatively, exclude all JSON files in the `services` folder
+API/src/services/*.json
