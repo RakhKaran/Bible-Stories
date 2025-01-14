@@ -161,7 +161,7 @@ export default function AnalyticsTopListenersSummary({ data, setFiler, filter })
             <Typography sx={{ opacity: 0.7, }} variant="h4">#1</Typography>
           </Box>
           <Avatar
-            src={JSON.parse(topListener.avatar).url || ''}
+            src={topListener.avatar.fileUrl || ''}
             alt={topListener.firstname}
             sx={{
               width: 80,
@@ -211,7 +211,7 @@ export default function AnalyticsTopListenersSummary({ data, setFiler, filter })
                   <TableCell>{index + 2}</TableCell> {/* Start numbering from #2 */}
                   <TableCell>
                     <Avatar
-                      src={JSON.parse(listener.avatar).url || ''}
+                      src={listener.avatar.fileUrl || ''}
                       alt={listener.firstname}
                       sx={{ width: 40, height: 40 }}
                     />

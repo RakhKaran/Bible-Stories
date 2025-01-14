@@ -210,7 +210,7 @@ export default function OverviewAnalyticsView() {
           </Grid>
         }
 
-        {(likedStoriesData.length < 0 || downloadStoriesData.length > 0) &&
+        {(likedStoriesData.length > 0 || downloadStoriesData.length > 0) &&
           <Grid xs={12} md={12} lg={12}>
             <AnalyticsLikedAndDownloadSummary likedStoriesData={likedStoriesData} downloadStoriesData={downloadStoriesData}/>
           </Grid>
