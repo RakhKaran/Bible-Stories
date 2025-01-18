@@ -4,7 +4,15 @@ import { get, HttpErrors, param, post } from "@loopback/rest";
 import { BibleStoriesDataSource } from "../datasources";
 import { PermissionKeys } from "../authorization/permission-keys";
 import { repository } from "@loopback/repository";
-import { AudioHistoryRepository, DownloadStoriesRepository, GuestUsersRepository, LanguageRepository, LikedStoriesRepository, StoriesRepository, UsersRepository } from "../repositories";
+import { AudioHistoryRepository, DownloadStoriesRepository, GuestUsersRepository, LanguageRepository, LikedStoriesRepository, StoriesRepository, UserAnalyticsRepository, UsersRepository } from "../repositories";
+
+interface AnalyticsData {
+  year: number;
+  month: number;
+  count: number;
+  returningUsers: number;
+  newUsers: number;
+}
 
 export class AnalyticsController {
   constructor(
@@ -24,6 +32,8 @@ export class AnalyticsController {
       public likedStorieRepository: LikedStoriesRepository,
       @repository(DownloadStoriesRepository)
       public downloadStoriesRepository: DownloadStoriesRepository,
+      @repository(UserAnalyticsRepository)
+      public userAnalyticsRepository: UserAnalyticsRepository,
   ) {}
 
   // analytics blocks...
@@ -64,6 +74,10 @@ export class AnalyticsController {
   }
 
   // Top listeners...
+  @authenticate({
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN],
+  })
   @get('/top-listeners')
   async topListenersBlocks(
     @param.query.string('timePeriod') timePeriod: string = 'all',  // Default to 'all'
@@ -118,7 +132,6 @@ export class AnalyticsController {
     }
   }
   
-
   // Most liked stories...
   @authenticate({
     strategy: 'jwt',
@@ -237,10 +250,344 @@ export class AnalyticsController {
     }
   }
 
+  // Analytics by story...
+  @authenticate({
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN],
+  })
+  @get('/analytics-by-storyId/{storyId}')
+  async storyAnalyticsById(
+    @param.path.number('storyId') storyId: number,
+  ): Promise<{ success: boolean; message: string; data: object }> {
+    try {
+      // Fetching story data
+      const story = await this.storiesRepository.findOne({
+        where : {
+          id : storyId,
+        },
+        include : [
+          {relation : 'category'}
+        ]
+      });
+  
+      if (!story) {
+        throw new HttpErrors.NotFound('Story Not Found');
+      }
+  
+      // Fetching audio history data for the particular story
+      const filterAudioHistory = await this.audioHistoryRepository.find({
+        where: {
+          storiesId: story.id,
+        },
+      });
+  
+      if (filterAudioHistory.length === 0) {
+        const cumulativeListeningDuration = 0;
+        const usersCount = filterAudioHistory.length;
+  
+        // Initializing an array to track language-wise duration and users count
+        let languageWiseDuration: any = [];
+  
+        // Populating the language-wise duration array with each audio's language
+        story.audios.forEach((audio) => {
+          if (audio.language) {
+            languageWiseDuration.push({
+              ...audio.language,
+              usersCount: 0,
+              cumulativeListeningDuration: 0,
+            });
+          }
+        });
+  
+        // liked count for this story...
+        const likedStories = await this.likedStorieRepository.find({ where: { storiesId: story.id } });
+        const likesCount = likedStories.length;
+  
+        // downloads count for this story...
+        const downloadStories = await this.downloadStoriesRepository.find({ where: { storiesId: story.id } });
+        const downloadCount = downloadStories.length;
+  
+        const data = {
+          storyData: story,
+          languageWiseData: languageWiseDuration,
+          cumulativeListeningDuration: cumulativeListeningDuration,
+          usersCount: usersCount,
+          likes: likesCount,
+          downloadCount: downloadCount,
+        };
+  
+        return {
+          success: true,
+          message: 'Analytics of story',
+          data: data,
+        };
+      }
+  
+      let cumulativeListeningDuration = 0;
+      const usersCount = filterAudioHistory.length;
+  
+      // for overall duration and users count
+      for (const audio of filterAudioHistory) {
+        if (audio.cumulativeListeningDuration) {
+          cumulativeListeningDuration += audio.cumulativeListeningDuration;
+        }
+      }
+  
+      // Initializing an array to track language-wise duration and users count
+      let languageWiseDuration: any = [];
+  
+      // Populating the language-wise duration array with each audio's language
+      story.audios.forEach((audio) => {
+        if (audio.language) {
+          languageWiseDuration.push({
+            ...audio.language,
+            usersCount: 0,
+            cumulativeListeningDuration: 0,
+          });
+        }
+      });
+  
+      // Accumulating the listening duration for each language
+      for (const audioHistory of filterAudioHistory) {
+        const audioLanguage = audioHistory.language; // Assuming language is stored in the history
+        const language = languageWiseDuration.find(
+          (lang: any) => lang.id === audioLanguage
+        );
+  
+        if (language) {
+          // Update cumulative listening duration for the language
+          language.cumulativeListeningDuration += audioHistory.cumulativeListeningDuration;
+  
+          // Increment the users count for the language
+          language.usersCount += 1;
+        }
+      }
+  
+      // liked count for this story...
+      const likedStories = await this.likedStorieRepository.find({ where: { storiesId: story.id } });
+      const likesCount = likedStories.length;
+  
+      // downloads count for this story...
+      const downloadStories = await this.downloadStoriesRepository.find({ where: { storiesId: story.id } });
+      const downloadCount = downloadStories.length;
+  
+      const data = {
+        storyData: story,
+        languageWiseData: languageWiseDuration,
+        cumulativeListeningDuration: cumulativeListeningDuration,
+        usersCount: usersCount,
+        likes: likesCount,
+        downloadCount: downloadCount,
+      };
+  
+      return {
+        success: true,
+        message: 'Analytics of story',
+        data: data,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }    
+
+  // Top stories...
+  @authenticate({
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN],
+  })
+  @get('/top-stories')
+  async topStoriesBlocks(
+    @param.query.string('timePeriod') timePeriod: string = 'all',  // Default to 'all'
+  ): Promise<{ success: boolean; message: string; data: object[] }> {
+    try {
+      // Construct query based on the timePeriod
+      let timeColumn = 'ah.cumulativeListeningDuration'; // Default to 'all'
+      
+      // Adjust the column based on the time period requested
+      if (timePeriod === 'daily') {
+        timeColumn = 'ah.dailyCumulativeListeningDuration';
+      } else if (timePeriod === 'weekly') {
+        timeColumn = 'ah.weeklyCumulativeListeningDuration';
+      } else if (timePeriod === 'monthly') {
+        timeColumn = 'ah.monthlyCumulativeListeningDuration';
+      } else if (timePeriod !== 'all') {
+        throw new HttpErrors.BadRequest('Invalid time period. Use "daily", "weekly", "monthly", or "all".');
+      }
+  
+      // Query the database to get top stories by the selected time period
+      const topStories = await this.audioHistoryRepository.dataSource.execute(
+        `
+        SELECT
+          ah.storiesId,
+          SUM(${timeColumn}) AS totalListeningDuration,
+          u.title,
+          u.subTitle,
+          u.images
+        FROM
+          AudioHistory ah
+        INNER JOIN
+          Stories u
+        ON
+          ah.storiesId = u.id
+        GROUP BY
+          ah.storiesId, u.title, u.subTitle, u.images
+        ORDER BY
+          totalListeningDuration DESC
+        LIMIT 10;
+        `,
+      );
+  
+      return {
+        success: true,
+        message: 'Top stories retrieved successfully',
+        data: topStories,
+      };
+    } catch (error) {
+      console.error('Error retrieving top stories:', error);
+      throw new HttpErrors.InternalServerError('Failed to retrieve top stories');
+    }
+  }
+
+  // Top languages...
+  @authenticate({
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN],
+  })
+  @get('/top-languages')
+  async topLanguagesBlocks(
+    @param.query.string('timePeriod') timePeriod: string = 'all',  // Default to 'all'
+  ): Promise<{ success: boolean; message: string; data: object[] }> {
+    try {
+      // Construct query based on the timePeriod
+      let timeColumn = 'ah.cumulativeListeningDuration'; // Default to 'all'
+      
+      // Adjust the column based on the time period requested
+      if (timePeriod === 'daily') {
+        timeColumn = 'ah.dailyCumulativeListeningDuration';
+      } else if (timePeriod === 'weekly') {
+        timeColumn = 'ah.weeklyCumulativeListeningDuration';
+      } else if (timePeriod === 'monthly') {
+        timeColumn = 'ah.monthlyCumulativeListeningDuration';
+      } else if (timePeriod !== 'all') {
+        throw new HttpErrors.BadRequest('Invalid time period. Use "daily", "weekly", "monthly", or "all".');
+      }
+  
+      // Query the database to get top languages by the selected time period
+      const topLanguages = await this.audioHistoryRepository.dataSource.execute(
+        `
+        SELECT
+          ah.language,
+          SUM(${timeColumn}) AS totalListeningDuration,
+          u.langName,
+          u.code,
+          u.nativeLangName
+        FROM
+          AudioHistory ah
+        INNER JOIN
+          Language u
+        ON
+          ah.language = u.id
+        GROUP BY
+          ah.language, u.langName, u.code, u.nativeLangName
+        ORDER BY
+          totalListeningDuration DESC
+        LIMIT 10;
+        `,
+      );
+  
+      return {
+        success: true,
+        message: 'Top languages retrieved successfully',
+        data: topLanguages,
+      };
+    } catch (error) {
+      console.error('Error retrieving top languages:', error);
+      throw new HttpErrors.InternalServerError('Failed to retrieve top languages');
+    }
+  }  
+
+  // users based analytics...
+  @authenticate({
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN],
+  })
+  @get('/users-analytics')
+  async usersAnalyticsGraphBlocks(): Promise<{ success: boolean; message: string; data: object[] }> {
+    try {
+      // Fetch all user analytics data
+      const userAnalyticsData = await this.userAnalyticsRepository.find();
+      
+      // Fetch all users to filter new users by registration date
+      const users = await this.usersRepository.find();
+  
+      // Group analytics data by year and month
+      const groupedAnalytics: { [key: string]: AnalyticsData } = userAnalyticsData.reduce((acc, analytics) => {
+        analytics.analytics.forEach((data) => {
+          const yearMonthKey = `${data.year}-${data.month}`;
+          if (!acc[yearMonthKey]) {
+            acc[yearMonthKey] = {
+              year: data.year,
+              month: data.month,
+              count: 0,
+              returningUsers: 0,
+              newUsers: 0,
+            };
+          }
+          acc[yearMonthKey].count += data.count;
+  
+          // Check for returning users
+          const returningUserStatus = analytics.monthlyUserStatus.find(
+            (status) => status.year === data.year && status.month === data.month
+          );
+          if (returningUserStatus && returningUserStatus.isReturningUser) {
+            acc[yearMonthKey].returningUsers += data.count;
+          }
+        });
+        return acc;
+      }, {} as { [key: string]: AnalyticsData });
+  
+      users.forEach((user) => {
+        // Ensure user.createdAt is not undefined
+        if (user.createdAt) {
+          const registrationDate = new Date(user.createdAt);  // Safely create a Date object
+          const registrationYear = registrationDate.getFullYear();
+          const registrationMonth = registrationDate.getMonth() + 1; // Month is 0-based
+      
+          const yearMonthKey = `${registrationYear}-${registrationMonth}`;
+          if (groupedAnalytics[yearMonthKey]) {
+            groupedAnalytics[yearMonthKey].newUsers += 1;  // Increment new user count for the year-month
+          } else {
+            groupedAnalytics[yearMonthKey] = {
+              year: registrationYear,
+              month: registrationMonth,
+              count: 0,            // Initialize count to 0 (will be updated elsewhere)
+              returningUsers: 0,    // Initialize returning user count to 0
+              newUsers: 1,         // Initialize new user count to 1 for this month
+            };
+          }
+        }
+      });
+  
+      // Prepare the result data for graph
+      const resultData = Object.values(groupedAnalytics).map((data) => ({
+        year: data.year,
+        month: data.month,
+        totalVisits: data.count,
+        returningUsers: data.returningUsers,
+        newUsers: data.newUsers,
+      }));
+  
+      return {
+        success: true,
+        message: 'User analytics fetched successfully.',
+        data: resultData,
+      };
+    } catch (error) {
+      console.error('Error while fetching user analytics data:', error);
+      throw error;
+    }
+  }
 }
-
-
-
 // reports
 
 // 4 blocks..

@@ -7,6 +7,7 @@ import { PushNotificationsRepository, UsersRepository } from "../repositories";
 import { PermissionKeys } from "../authorization/permission-keys";
 import { PushNotifications } from "../models";
 import { NotificationService } from "../services/notification.service";
+import { NotificationCronJob } from "../services/cronjob.service";
 
 export class PushNotificationController {
   constructor(
@@ -16,8 +17,8 @@ export class PushNotificationController {
     public pushNotificationsRepository : PushNotificationsRepository,
     @repository(UsersRepository)
     public usersRepository : UsersRepository,
-    @inject('services.notification.service')
-    private notificationService: NotificationService,
+    @inject('service.cronjob.service')
+    private notificationCronJob : NotificationCronJob
   ) {}
 
     // users list which allow push notification...
@@ -60,7 +61,7 @@ export class PushNotificationController {
       strategy: 'jwt',
       options: [PermissionKeys.ADMIN],
     })
-    @post('/push-notifications/list')
+    @post('/push-notifications')
     async sendNewPushNotification(
       @requestBody({
         content: {
@@ -74,7 +75,7 @@ export class PushNotificationController {
       })
       pushNotifications: Omit<PushNotifications, 'id'>,
     ): Promise<{ success: boolean; message: string }> {
-      let notification;
+      let notification : any;
       try {
         // Step 1: Create the notification
         notification = await this.pushNotificationsRepository.create(pushNotifications);
@@ -82,7 +83,7 @@ export class PushNotificationController {
         // Step 2: Collect FCM tokens of the target users
         const fcmTokens: Array<string> = [];
         await Promise.all(
-          notification.targetUsers.map(async (userId) => {
+          notification.targetUsers.map(async (userId : any) => {
             const userData = await this.usersRepository.findById(userId);
             if (userData?.fcmToken) {
               fcmTokens.push(userData.fcmToken);
@@ -92,44 +93,50 @@ export class PushNotificationController {
     
         // Step 3: Prepare the data for sending the FCM notification
         let data: any = {
-          clientTokens: fcmTokens,
+          // clientTokens: fcmTokens,
           title: notification.title, // Pass the title from the notification data
           body: notification.messageBody, // Pass the body from the notification data
         };
     
         // Optionally include image if it exists
         if (notification.image) {
-          data.image = notification.image;
+          data.image = notification.image?.fileUrl;
         }
     
-        // Step 4: Send the notification using the notification service
-        const response = await this.notificationService.sendFCMNotification(data);
-    
-        // Step 5: Update the notification status based on FCM response
-        if (response?.success) {
-          await this.pushNotificationsRepository.updateById(notification.id, {
-            status: 'sent', // Status set as sent if the notification was successfully sent
-          });
-        } else {
-          await this.pushNotificationsRepository.updateById(notification.id, {
-            status: 'failed', // Status set as failed if the notification could not be sent
-          });
-        }
-    
-        return {
+        // Step 4: Pass data to the cron job
+      this.notificationCronJob.setJobData(fcmTokens, data); // Pass the FCM tokens and notification data
+
+      // Step 5: Return success message
+      return {
+        success: true,
+        message: 'Push notification job started successfully.',
+      };
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      return {
+        success: false,
+        message: 'Failed to start push notification job.',
+      };
+    }
+  }
+
+    // get notifications on admin panel...
+    @authenticate({
+      strategy: 'jwt',
+      options: [PermissionKeys.ADMIN],
+    })
+    @get('/push-notifications/list')
+    async fetchNewPushNotification(): Promise<{ success: boolean; message: string, data: PushNotifications[] }> {
+      try{
+        const notifications = await this.pushNotificationsRepository.find();
+
+        return{
           success: true,
-          message: 'Notification sent successfully.',
-        };
-      } catch (error) {
-        // Step 6: Handle any errors and update the status if necessary
-        if (notification?.id) {
-          await this.pushNotificationsRepository.updateById(notification.id, {
-            status: 'failed', // Set the status to failed if an error occurs during processing
-          });
+          message: 'Push Notifications List',
+          data: notifications
         }
-    
-        console.error('Error in sending notification:', error); // Log error for debugging purposes
-        throw new Error('Failed to send push notification'); // Throw a proper error message to the client
+      }catch(error){
+        throw error;
       }
     }
 }

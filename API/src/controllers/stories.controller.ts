@@ -8,6 +8,7 @@ import { authenticate, AuthenticationBindings } from "@loopback/authentication";
 import { PermissionKeys } from "../authorization/permission-keys";
 import { UserProfile } from "@loopback/security";
 import { JWTService } from "../services/jwt-service";
+import { UserAnalyticsService } from "../services/user-analytics.service";
 
 export class StoriesController {
   constructor(
@@ -27,6 +28,8 @@ export class StoriesController {
     public audioHistoryRepository : AudioHistoryRepository,
     @inject('service.jwt.service')
     public jwtService: JWTService,
+    @inject('service.user-analytics.service')
+    public userAnalyticsService: UserAnalyticsService,
   ) {}
 
   // fetching token from header and returning userProfile...
@@ -454,6 +457,12 @@ export class StoriesController {
       if(currentUser.id){
         user = await this.usersRepository.findById(currentUser.id);
       };
+
+      // updating analytics..
+      if(user && Array.isArray(user.permissions) && user.permissions.includes('listener')){
+        await this.userAnalyticsService.userAnalyticsUpdate(user.id);
+      }
+
       // fetching categories..
       const categories = await this.categoryRepository.find();
 

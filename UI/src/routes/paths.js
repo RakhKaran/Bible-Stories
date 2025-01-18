@@ -141,6 +141,7 @@ export const paths = {
       new: `${ROOTS.DASHBOARD}/story/new`,
       list: `${ROOTS.DASHBOARD}/story/list`,
       edit: (id) => `${ROOTS.DASHBOARD}/story/${id}/edit`,
+      analytics: (storyId) => `${ROOTS.DASHBOARD}/story/${storyId}/analytics`,
       // story-questions
       newQuestion:(storyId) => `${ROOTS.DASHBOARD}/story/new-question/${storyId}`,
       questionList:(storyId) => `${ROOTS.DASHBOARD}/story/question-list/${storyId}`,
@@ -153,6 +154,12 @@ export const paths = {
       new: `${ROOTS.DASHBOARD}/question/new`,
       list: `${ROOTS.DASHBOARD}/question/list`,
       edit: (id) => `${ROOTS.DASHBOARD}/question/${id}/edit`,
+    },
+    // push notificaions
+    pushNotification : {
+      root: `${ROOTS.DASHBOARD}/push-notification`,
+      new: `${ROOTS.DASHBOARD}/push-notification/new`,
+      list: `${ROOTS.DASHBOARD}/push-notification/list`,
     },
     product: {
       root: `${ROOTS.DASHBOARD}/product`,

@@ -25,9 +25,11 @@ import {JWTService} from './services/jwt-service';
 import {MyUserService} from './services/user-service';
 import {EmailService} from './services/email.service';
 import { FirebaseAdmin } from './services/firebase.service';
-import {SyncProductCron} from './services/cronjob.service';
+import {NotificationCronJob} from './services/cronjob.service';
 import {ExcelImportService} from './services/excel-import.service';
 import { NotificationService } from './services/notification.service';
+import { NotificationCron } from './services/notificationCron.service';
+import { UserAnalyticsService } from './services/user-analytics.service';
 
 export {ApplicationConfig};
 
@@ -75,7 +77,9 @@ export class BibleStoriesApplication extends BootMixin(
     this.bind('service.user.service').toClass(MyUserService);
     this.bind('service.firebase-admin').toClass(FirebaseAdmin);
     this.bind(EmailManagerBindings.SEND_MAIL).toClass(EmailService);
-    this.bind('service.cronjob.service').toClass(SyncProductCron);
+    this.bind('service.notificationcronjob.service').toClass(NotificationCron);
+    this.bind('service.cronjob.service').toClass(NotificationCronJob);
+    this.bind('service.user-analytics.service').toClass(UserAnalyticsService);
     this.bind('services.notification.service').toClass(NotificationService)
   }
 

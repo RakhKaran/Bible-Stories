@@ -135,19 +135,64 @@ export default function StoryTableRow({
           </Tooltip>
         </TableCell>
 
-        <TableCell align="right">
+        {/* <TableCell align="right">
           <IconButton color={popover.open ? 'primary' : 'default'} onClick={popover.onOpen}>
             <Iconify icon="eva:more-vertical-fill" />
           </IconButton>
+        </TableCell> */}
+        <TableCell align="right">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <Tooltip title="Analytics" placement="top" arrow>
+              <IconButton
+                color="default"
+                onClick={() => {
+                  navigate(paths.dashboard.story.analytics(row.id));
+                }}
+              >
+                <Iconify icon="eva:bar-chart-fill" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Comments" placement="top" arrow>
+              <IconButton
+                color="default"
+                onClick={() => {
+                  navigate(paths.dashboard.story.commentsList(row.id));
+                }}
+              >
+                <Iconify icon="eva:message-circle-fill" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Questions" placement="top" arrow>
+              <IconButton
+                color="default"
+                onClick={() => {
+                  navigate(paths.dashboard.story.questionList(row.id));
+                }}
+              >
+                <Iconify icon="eva:question-mark-circle-fill" />
+              </IconButton>
+            </Tooltip>
+          </div>
         </TableCell>
       </TableRow>
 
-      <CustomPopover
+      {/* <CustomPopover
         open={popover.open}
         onClose={popover.onClose}
         arrow="right-top"
         sx={{ width: 160 }}
       >
+        <MenuItem
+          onClick={() => {
+            navigate(paths.dashboard.story.analytics(row.id));
+            popover.onClose();
+          }}
+        >
+          <Iconify icon="solar:eye-bold" />
+          View Analytics
+        </MenuItem>
         <MenuItem
           onClick={() => {
             navigate(paths.dashboard.story.questionList(row.id));
@@ -166,7 +211,7 @@ export default function StoryTableRow({
           <Iconify icon="solar:eye-bold" />
           View Comments
         </MenuItem>
-      </CustomPopover>
+      </CustomPopover> */}
 
       <StoryQuickEditForm
         currentStoryId={row.id}

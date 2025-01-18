@@ -28,93 +28,56 @@ const formatDuration = (seconds) => {
   return `${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${Math.round(remainingSeconds)}s`;
 };
 
-// Extended dummy data up to 10 entries
+// Dummy data for testing
 // const dummyData = [
 //   {
-//     usersId: 1,
+//     storiesId: 1,
 //     totalListeningDuration: 15328, // in seconds
-//     avatar: '{"url": "https://randomuser.me/api/portraits/men/1.jpg"}',
-//     firstname: 'Karan Rakh',
-//     email: null,
-//     phonenumber: '+918788002033',
+//     title: 'God\'s Creation',
+//     subTitle: 'miracle',
+//     images: '[{"fileName":"audio_cover_image_1.jpeg","fileUrl":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg","preview":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg"}]',
 //   },
 //   {
-//     usersId: 2,
-//     totalListeningDuration: 9823,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/women/2.jpg"}',
-//     firstname: 'Listener2',
-//     email: null,
-//     phonenumber: '+919876543210',
+//     storiesId: 1,
+//     totalListeningDuration: 15328, // in seconds
+//     title: 'God\'s Creation',
+//     subTitle: 'miracle',
+//     images: '[{"fileName":"audio_cover_image_1.jpeg","fileUrl":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg","preview":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg"}]',
 //   },
 //   {
-//     usersId: 3,
-//     totalListeningDuration: 4621,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/men/3.jpg"}',
-//     firstname: 'Listener3',
-//     email: null,
-//     phonenumber: '+917654321987',
+//     storiesId: 1,
+//     totalListeningDuration: 15328, // in seconds
+//     title: 'God\'s Creation',
+//     subTitle: 'miracle',
+//     images: '[{"fileName":"audio_cover_image_1.jpeg","fileUrl":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg","preview":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg"}]',
 //   },
 //   {
-//     usersId: 4,
-//     totalListeningDuration: 1528,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/men/4.jpg"}',
-//     firstname: 'Listener4',
-//     email: null,
-//     phonenumber: '+918788002044',
+//     storiesId: 1,
+//     totalListeningDuration: 15328, // in seconds
+//     title: 'God\'s Creation',
+//     subTitle: 'miracle',
+//     images: '[{"fileName":"audio_cover_image_1.jpeg","fileUrl":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg","preview":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg"}]',
 //   },
 //   {
-//     usersId: 5,
-//     totalListeningDuration: 9876,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/women/5.jpg"}',
-//     firstname: 'Listener5',
-//     email: null,
-//     phonenumber: '+919123456789',
+//     storiesId: 1,
+//     totalListeningDuration: 15328, // in seconds
+//     title: 'God\'s Creation',
+//     subTitle: 'miracle',
+//     images: '[{"fileName":"audio_cover_image_1.jpeg","fileUrl":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg","preview":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg"}]',
 //   },
 //   {
-//     usersId: 6,
-//     totalListeningDuration: 7412,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/men/6.jpg"}',
-//     firstname: 'Listener6',
-//     email: null,
-//     phonenumber: '+918788002055',
+//     storiesId: 1,
+//     totalListeningDuration: 15328, // in seconds
+//     title: 'God\'s Creation',
+//     subTitle: 'miracle',
+//     images: '[{"fileName":"audio_cover_image_1.jpeg","fileUrl":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg","preview":"http://localhost:3034/files/20241231T094500939Z_audio_cover_image_1.jpeg"}]',
 //   },
-//   {
-//     usersId: 7,
-//     totalListeningDuration: 5500,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/men/7.jpg"}',
-//     firstname: 'Listener7',
-//     email: null,
-//     phonenumber: '+917788990099',
-//   },
-//   {
-//     usersId: 8,
-//     totalListeningDuration: 1045,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/women/8.jpg"}',
-//     firstname: 'Listener8',
-//     email: null,
-//     phonenumber: '+918755445566',
-//   },
-//   {
-//     usersId: 9,
-//     totalListeningDuration: 8900,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/men/9.jpg"}',
-//     firstname: 'Listener9',
-//     email: null,
-//     phonenumber: '+919123487654',
-//   },
-//   {
-//     usersId: 10,
-//     totalListeningDuration: 7000,
-//     avatar: '{"url": "https://randomuser.me/api/portraits/women/10.jpg"}',
-//     firstname: 'Listener10',
-//     email: null,
-//     phonenumber: '+917855664433',
-//   },
+//   // Add other dummy entries here
 // ];
 
 // ----------------------------------------------------------------------
 
-export default function AnalyticsTopListenersSummary({ data, setFilter, filter }) {
+export default function AnalyticsTopStoriesSummary({ data, setFilter, filter }) {
   const theme = useTheme();
 
   if (!data || data.length === 0) {
@@ -131,9 +94,9 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
         <Card
           sx={{
             ...bgGradient({
-              direction: '135deg',
-              startColor: alpha(theme.palette.primary.light, 0.2),
-              endColor: alpha(theme.palette.primary.main, 0.2),
+                direction: '135deg',
+                startColor: alpha(theme.palette.secondary.light, 0.2),
+                endColor: alpha(theme.palette.secondary.main, 0.2),
             }),
             borderRadius: 2,
             p: 4,
@@ -148,7 +111,6 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
               position: 'absolute',
               top: 10,
               left: 10,
-              // background: theme.palette.primary.main,
               color: theme.palette.primary.darker,
               borderRadius: '50%',
               width: 30,
@@ -161,8 +123,8 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
             <Typography sx={{ opacity: 0.7, }} variant="h4">#1</Typography>
           </Box>
           <Avatar
-            src={topListener.avatar.fileUrl || ''}
-            alt={topListener.firstname}
+            src={topListener.images ? JSON.parse(topListener.images)[0].fileUrl : ''}
+            alt={topListener.title}
             sx={{
               width: 80,
               height: 80,
@@ -171,7 +133,7 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
               border: `4px solid ${theme.palette.primary.main}`,
             }}
           />
-          <Typography variant="h4">{topListener.firstname}</Typography>
+          <Typography variant="h4">{topListener.title}</Typography>
           <Typography variant="subtitle2" sx={{ opacity: 0.7, mb: 1 }}>
             Total Listening Duration:
           </Typography>
@@ -181,9 +143,9 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
 
       {/* Other Listeners */}
       <Grid item xs={12} md={6}>
-        <Box sx={{display : 'flex', alignItems : 'center', justifyContent : 'space-between', mb: 2,}}>
-          <Typography variant="h6" sx={{  width:'60%' }}>
-            Other Top Listeners
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, }}>
+          <Typography variant="h6" sx={{ width: '60%' }}>
+            Other Top Stories
           </Typography>
           <Select
             value={filter} // Current filter value
@@ -193,7 +155,7 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
             <MenuItem value="weekly">Weekly</MenuItem>
             <MenuItem value="monthly">Monthly</MenuItem>
             <MenuItem value="all">All Time</MenuItem>
-        </Select>
+          </Select>
         </Box>
         <TableContainer component={Box} sx={{ maxHeight: 250, overflow: 'auto' }}>
           <Table size="small">
@@ -211,12 +173,12 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
                   <TableCell>{index + 2}</TableCell> {/* Start numbering from #2 */}
                   <TableCell>
                     <Avatar
-                      src={listener.avatar.fileUrl || ''}
-                      alt={listener.firstname}
+                      src={listener.images ? JSON.parse(listener.images)[0].fileUrl : ''}
+                      alt={listener.title}
                       sx={{ width: 40, height: 40 }}
                     />
                   </TableCell>
-                  <TableCell>{listener.firstname || 'N/A'}</TableCell>
+                  <TableCell>{listener.title || 'N/A'}</TableCell>
                   <TableCell>{formatDuration(listener.totalListeningDuration)}</TableCell>
                 </TableRow>
               ))}
@@ -228,15 +190,14 @@ export default function AnalyticsTopListenersSummary({ data, setFilter, filter }
   );
 }
 
-AnalyticsTopListenersSummary.propTypes = {
+AnalyticsTopStoriesSummary.propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
-      usersId: PropTypes.number.isRequired,
-      totalListeningDuration: PropTypes.number.isRequired, // Updated to number
-      avatar: PropTypes.string.isRequired,
-      firstname: PropTypes.string.isRequired,
-      email: PropTypes.string,
-      phonenumber: PropTypes.string,
+      storiesId: PropTypes.number.isRequired,
+      totalListeningDuration: PropTypes.number.isRequired,
+      title: PropTypes.string.isRequired,
+      subTitle: PropTypes.string.isRequired,
+      images: PropTypes.string.isRequired,
     })
   ),
   setFilter: PropTypes.func,

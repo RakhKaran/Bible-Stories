@@ -85,4 +85,8 @@ export const endpoints = {
     list: (storyId, limit, skip) => `/comments/${storyId}?limit=${limit}&skip=${skip}`,
     replyList: (commentId, limit, skip) => `/comment-replies/${commentId}?limit=${limit}&skip=${skip}`
   },
+  // push notifications api endpoints...
+  pushNotification: {
+    list:  `/push-notifications/list`,
+  },
 };

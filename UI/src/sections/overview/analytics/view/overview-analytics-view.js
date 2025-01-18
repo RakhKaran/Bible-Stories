@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-catch */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 // @mui
@@ -17,12 +18,15 @@ import axiosInstance from 'src/utils/axios';
 //
 // import AnalyticsNews from '../analytics-news';
 // import AnalyticsTasks from '../analytics-tasks';
+import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import AnalyticsCurrentVisits from '../analytics-current-visits';
 // import AnalyticsOrderTimeline from '../analytics-order-timeline';
 import AnalyticsWebsiteVisits from '../analytics-website-visits';
 import AnalyticsWidgetSummary from '../analytics-widget-summary';
 import AnalyticsTopListenersSummary from '../anayltics-top-listners';
 import AnalyticsLikedAndDownloadSummary from '../analytics-stories-liked-downloads';
+import AnalyticsTopStoriesSummary from '../analytics-top-stories';
+import AnalyticsTopLanguageSummary from '../analytics-top-languages';
 // import AnalyticsTrafficBySite from '../analytics-traffic-by-site';
 // import AnalyticsCurrentSubject from '../analytics-current-subject';
 // import AnalyticsConversionRates from '../analytics-conversion-rates';
@@ -35,8 +39,14 @@ export default function OverviewAnalyticsView() {
   const [blockData, setBlockData] = useState();
   const [topListenersData, setTopListenersData] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [storyFilter, setStoryFilter] = useState('all');
+  const [languageFilter, setLanguageFilter] = useState('all');
   const [likedStoriesData, setLikedStoriesData] = useState([]);
   const [downloadStoriesData, setDownloadStoriesData] = useState([]);
+  const [topStoriesData, setTopStoriesData] = useState([]);
+  const [topLanguagesData, setTopLanguagesData] = useState([]);
+  const [monthWiseUserData, setMonthWiseUserData] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const fetchBlockData = async() => {
     try{
@@ -56,6 +66,30 @@ export default function OverviewAnalyticsView() {
 
       if(response?.data?.success){
         setTopListenersData(response?.data?.data);
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  const fetchTopStories = async(timePeriod) => {
+    try{
+      const response = await axiosInstance.get(`/top-stories?timePeriod=${timePeriod}`);
+
+      if(response?.data?.success){
+        setTopStoriesData(response?.data?.data);
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  const fetchTopLanguages = async(timePeriod) => {
+    try{
+      const response = await axiosInstance.get(`/top-languages?timePeriod=${timePeriod}`);
+
+      if(response?.data?.success){
+        setTopLanguagesData(response?.data?.data);
       }
     }catch(error){
       console.error(error);
@@ -86,17 +120,72 @@ export default function OverviewAnalyticsView() {
     }
   }
 
+  const fetchUserAnalytics = async() => {
+    try{
+      const response = await axiosInstance.get('/users-analytics');
+
+      if(response?.data?.success){
+        setMonthWiseUserData(response?.data?.data);
+      }
+    }catch(error){
+      throw error;
+    }
+  }
+
   useEffect(() => {
     fetchBlockData();
     fetchMostLikedStories();
     fetchMostDownloadStories();
+    fetchUserAnalytics();
   },[])
 
   useEffect(() => {
       fetchTopListners(filter);
   },[filter])
 
-  console.log('blockData', blockData);
+  useEffect(() => {
+    fetchTopStories(storyFilter);
+  },[storyFilter])
+
+  useEffect(() => {
+    fetchTopLanguages(languageFilter);
+  },[languageFilter])
+
+  const filterDataByYear = (year) => monthWiseUserData.filter((data) => data.year === year);
+
+  const generateChartData = () => {
+    const allMonths = Array.from({ length: 12 }, (_, i) => i + 1); // Create an array for months 1 to 12
+    const dataForYear = filterDataByYear(selectedYear);
+
+    const monthlyUserCount = allMonths.map((month) => {
+      const data = dataForYear.find((item) => item.month === month);
+      return data ? data.totalVisits : 0; // If no data, return 0
+    });
+
+    const returningUsers = allMonths.map((month) => {
+      const data = dataForYear.find((item) => item.month === month);
+      return data ? data.returningUsers : 0;
+    });
+
+    const newUsers = allMonths.map((month) => {
+      const data = dataForYear.find((item) => item.month === month);
+      return data ? data.newUsers : 0;
+    });
+
+    return {
+      labels: allMonths.map((month) => `${month < 10 ? `0${month}` : month}/01/${selectedYear}`), // Format labels as MM/01/YYYY
+      series: [
+        { name: 'Total Visits', type: 'column', fill: 'solid', data: monthlyUserCount },
+        { name: 'Returning Users', type: 'area', fill: 'gradient', data: returningUsers },
+        { name: 'New Users', type: 'line', fill: 'solid', data: newUsers },
+      ],
+    };
+  };
+
+  // Handle year change
+  const handleYearChange = (event) => {
+    setSelectedYear(event.target.value);
+  };
 
   return (
     <Container maxWidth={settings.themeStretch ? false : 'xl'}>
@@ -148,49 +237,34 @@ export default function OverviewAnalyticsView() {
           />
         </Grid>
 
-        <Grid xs={12} md={6} lg={8}>
+        {topStoriesData.length > 0 &&
+          <Grid xs={12} md={12} lg={12}>
+            <AnalyticsTopStoriesSummary data={topStoriesData} filter={storyFilter} setFilter={setStoryFilter}/>
+          </Grid>
+        }
+
+        {/* Year Dropdown */}
+        <div style={{width : '100%', display : 'flex', alignItems : 'center', justifyContent: 'flex-end', gap: '10px', marginTop:'10px'}}>
+          <Typography>Select Year: </Typography>
+          <Select value={selectedYear} onChange={handleYearChange}>
+            {/* Populate year options dynamically */}
+            {Array.from(new Set(monthWiseUserData.map((data) => data.year))).map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
+            ))}
+          </Select>
+        </div>
+
+        {/* Analytics Chart */}
+        <Grid xs={12} md={12} lg={12}>
           <AnalyticsWebsiteVisits
-            title="Website Visits"
-            subheader="(+43%) than last year"
-            chart={{
-              labels: [
-                '01/01/2003',
-                '02/01/2003',
-                '03/01/2003',
-                '04/01/2003',
-                '05/01/2003',
-                '06/01/2003',
-                '07/01/2003',
-                '08/01/2003',
-                '09/01/2003',
-                '10/01/2003',
-                '11/01/2003',
-              ],
-              series: [
-                {
-                  name: 'Team A',
-                  type: 'column',
-                  fill: 'solid',
-                  data: [23, 11, 22, 27, 13, 22, 37, 21, 44, 22, 30],
-                },
-                {
-                  name: 'Team B',
-                  type: 'area',
-                  fill: 'gradient',
-                  data: [44, 55, 41, 67, 22, 43, 21, 41, 56, 27, 43],
-                },
-                {
-                  name: 'Team C',
-                  type: 'line',
-                  fill: 'solid',
-                  data: [30, 25, 36, 30, 45, 35, 64, 52, 59, 36, 39],
-                },
-              ],
-            }}
+            title="App Visits"
+            chart={generateChartData()}
           />
         </Grid>
 
-        <Grid xs={12} md={6} lg={4}>
+        {/* <Grid xs={12} md={6} lg={4}>
           <AnalyticsCurrentVisits
             title="Current Visits"
             chart={{
@@ -202,17 +276,23 @@ export default function OverviewAnalyticsView() {
               ],
             }}
           />
-        </Grid>
+        </Grid> */}
 
         {topListenersData.length > 0 && 
           <Grid xs={12} md={12} lg={12}>
-            <AnalyticsTopListenersSummary data={topListenersData} filter={filter} setFiler={setFilter}/>
+            <AnalyticsTopListenersSummary data={topListenersData} filter={filter} setFilter={setFilter}/>
           </Grid>
         }
 
         {(likedStoriesData.length > 0 || downloadStoriesData.length > 0) &&
           <Grid xs={12} md={12} lg={12}>
             <AnalyticsLikedAndDownloadSummary likedStoriesData={likedStoriesData} downloadStoriesData={downloadStoriesData}/>
+          </Grid>
+        }
+
+        {(topLanguagesData.length > 0) &&
+          <Grid xs={12} md={12} lg={12}>
+            <AnalyticsTopLanguageSummary data={topLanguagesData}  filter={languageFilter} setFilter={setLanguageFilter}/>
           </Grid>
         }
 

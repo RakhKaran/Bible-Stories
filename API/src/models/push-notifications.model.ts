@@ -21,9 +21,9 @@ export class PushNotifications extends Entity {
   messageBody: string;
 
   @property({
-    type: 'string'
+    type: 'object',
   })
-  image?: string;
+  image?: object;
 
   @property({
     typw: 'string'

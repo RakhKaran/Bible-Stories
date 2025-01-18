@@ -8,7 +8,7 @@ import { useResponsive } from "src/hooks/use-responsive";
 export default function StoryCardView({ storyId }) {
   const [currentStory, setCurrentStory] = useState(null);
   const [error, setError] = useState(null);
-  const isMobile = useResponsive('md', 'up')
+  const isMobile = useResponsive('md', 'up');
 
   // Fetch story by ID
   const fetchStoryById = async (id) => {

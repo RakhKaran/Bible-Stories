@@ -70,6 +70,7 @@ const CategoryCreatePage = lazy(() => import('src/pages/dashboard/categories/new
 // STORIES PAGES
 const StoryListPage = lazy(() => import('src/pages/dashboard/stories/list-page'));
 const StoryCreatePage = lazy(() => import('src/pages/dashboard/stories/new-story-page'));
+const StoryAnalyticsPage = lazy(() => import('src/pages/dashboard/stories/story-analytics-page'));
 // STORIES QUESTION PAGES
 const StoryQuestionsListPage = lazy(() => import('src/pages/dashboard/story-questions/list-page'));
 const StoryQuestionsCreatePage = lazy(() => import('src/pages/dashboard/story-questions/new-story-question-page'));
@@ -78,6 +79,9 @@ const GeneralQuestionsListPage = lazy(() => import('src/pages/dashboard/general-
 const GeneralQuestionsCreatePage = lazy(() => import('src/pages/dashboard/general-questions/new-general-question-page'));
 // COMMENTS PAGES
 const StoryCommentsListPage = lazy(() => import('src/pages/dashboard/comments/list-page'));
+// PUSH NOTIFICATIONS
+const PushNotificationListPage = lazy(() => import('src/pages/dashboard/push-notifications/push-notification-list'));
+const PushNotificationCreatePage = lazy(() => import('src/pages/dashboard/push-notifications/push-notification-new'));
 // ----------------------------------------------------------------------
 
 export const dashboardRoutes = [
@@ -141,6 +145,7 @@ export const dashboardRoutes = [
           { element: <StoryListPage />, index: true },
           { path: 'list', element: <StoryListPage /> },
           { path: 'new', element: <StoryCreatePage /> },
+          { path: ':storyId/analytics', element: <StoryAnalyticsPage /> },
           // story questions...
           { path: 'question-list/:storyId', element: <StoryQuestionsListPage/>},
           { path: 'new-question/:storyId', element: <StoryQuestionsCreatePage/>},
@@ -156,6 +161,16 @@ export const dashboardRoutes = [
           { element: <GeneralQuestionsListPage />, index: true },
           { path: 'list', element: <GeneralQuestionsListPage /> },
           { path: 'new', element: <GeneralQuestionsCreatePage /> },
+        ],
+      },
+
+      // push notification...
+      {
+        path: 'push-notification',
+        children: [
+          { element: <PushNotificationListPage />, index: true },
+          { path: 'list', element: <PushNotificationListPage /> },
+          { path: 'new', element: <PushNotificationCreatePage /> },
         ],
       },
 

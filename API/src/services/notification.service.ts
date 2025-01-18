@@ -52,83 +52,47 @@ export class NotificationService {
     }
   }
 
-  // Function to split an array into chunks
-  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
-    const result = [];
-    for (let i = 0; i < array.length; i += chunkSize) {
-      result.push(array.slice(i, i + chunkSize));
-    }
-    return result;
-  }
-
   // Function to send FCM notifications in batches
-  async sendFCMNotification({
-    clientTokens,
-    title,
-    body,
-    image,
-    data,
-  }: {
-    clientTokens: string[]; // Multiple client device FCM tokens
+  async sendFCMNotification(token: string, notificationData: {
     title: string;
     body: string;
-    image?: string; // Optional image URL
-    data?: FCMData; // Optional additional data
-  }): Promise<any> {
-    const accessToken = await this.getAccessToken();
+    image?: string;
+    data?: FCMData;
+  }) {
+    const accessToken = await this.getAccessToken(); // Get the Bearer Token
     if (!accessToken) {
       console.error('No access token generated!');
       throw new Error('Access token not available');
     }
 
-    // Break clientTokens into batches of 500 (FCM limit)
-    const tokenBatches = this.chunkArray(clientTokens, 500);
-
-    // Loop through each batch and send notifications
-    const batchPromises = tokenBatches.map(async (tokens) => {
-      const batchMessageData = {
-        message: {
-          notification: {
-            title,
-            body,
-            image,
-          },
-          tokens, // Send to multiple tokens in one batch
-          data, // Optional additional data
+    const messageData = {
+      message: {
+        notification: {
+          title: notificationData.title,
+          body: notificationData.body,
+          image: notificationData.image, // Optional: Image URL for notification
         },
-      };
+        data: notificationData.data || {}, // Optional: Custom payload
+        token, // Send message to a single token
+      },
+    };
 
-      try {
-        const response = await this.axiosInstance.post(
-          'https://fcm.googleapis.com/v1/projects/biblestories-733b5/messages:send',
-          batchMessageData,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`, // Dynamic access token
-            },
-          }
-        );
-        console.log(`Batch notification sent successfully:`, response.data);
-        return response.data;
-      } catch (error) {
-        console.error(
-          `Error sending batch notification:`,
-          error.response ? error.response.data : error.message
-        );
-        throw error;
-      }
-    });
-
-    // Wait for all batches to be processed
     try {
-      const results = await Promise.all(batchPromises);
-      return {
-        success: true,
-        data: results,
-      };
+      const response = await this.axiosInstance.post(
+        'https://fcm.googleapis.com/v1/projects/biblestories-733b5/messages:send', // FCM v1 endpoint
+        messageData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      console.log(`Notification sent successfully to ${token}:`, response);
+      return { success: true, token };
     } catch (error) {
-      console.error('Error sending batch notifications:', error);
-      throw new Error('Error sending batch notifications');
+      console.error(`Failed to send notification to token ${token}:`, error.response ? error.response.data : error.message);
+      return { success: false, token, error: error.response ? error.response.data : error.message };
     }
   }
 }

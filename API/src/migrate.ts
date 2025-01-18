@@ -20,7 +20,8 @@ export async function migrate(args: string[]) {
       'DownloadStories',
       'AudioHistory',
       'GuestUsers',
-      'PushNotifications'
+      'PushNotifications',
+      'UserAnalytics'
     ],
   });
 

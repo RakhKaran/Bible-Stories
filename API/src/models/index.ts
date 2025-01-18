@@ -10,3 +10,4 @@ export * from './download-stories.model';
 export * from './audio-history.model';
 export * from './guest-users.model';
 export * from './push-notifications.model';
+export * from './user-analytics.model';

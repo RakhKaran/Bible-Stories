@@ -124,15 +124,15 @@ export function useNavData() {
             ],
           },
           // PUSH NOTIFICATIONS
-          // {
-          //   title: t('push notifications'),
-          //   path: paths.dashboard.question.root,
-          //   icon: ICONS.notification,
-          //   children: [
-          //     { title: t('list'), path: paths.dashboard.question.list },
-          //     { title: t('New notification'), path: paths.dashboard.question.new },
-          //   ],
-          // }
+          {
+            title: t('push notifications'),
+            path: paths.dashboard.pushNotification.root,
+            icon: ICONS.notification,
+            children: [
+              { title: t('list'), path: paths.dashboard.pushNotification.list },
+              { title: t('New notification'), path: paths.dashboard.pushNotification.new },
+            ],
+          }
         ],
       },
     ],
