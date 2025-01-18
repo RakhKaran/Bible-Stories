@@ -62,7 +62,7 @@ export default function PushNotificationTableRow({ row, selected, onEditRow, onD
           />
         </TableCell>
 
-        <TableCell>
+        {/* <TableCell>
           <Label
             variant="soft"
             color={
@@ -75,7 +75,7 @@ export default function PushNotificationTableRow({ row, selected, onEditRow, onD
           >
             {status}
           </Label>
-        </TableCell>
+        </TableCell> */}
 
         {/* <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
           <Tooltip title="Quick Edit" placement="top" arrow>

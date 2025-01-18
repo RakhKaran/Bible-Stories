@@ -43,7 +43,7 @@ import PushNotificationTableFiltersResult from '../push-notification-table-filte
 const TABLE_HEAD = [
   { id: 'name', label: 'Title' },
   { id: 'createdAt', label: 'Create at', width: 160 },
-  { id: 'status', label: 'Status', width: 100 },
+  // { id: 'status', label: 'Status', width: 100 },
   // { id: '', width: 88 },
 ];
 
@@ -302,7 +302,7 @@ function applyFilter({ inputData, comparator, filters }) {
 
   if (name) {
     inputData = inputData.filter(
-      (user) => user.firstName.toLowerCase().indexOf(name.toLowerCase()) !== -1
+      (notification) => notification.title.toLowerCase().indexOf(name.toLowerCase()) !== -1
     );
   }
 
