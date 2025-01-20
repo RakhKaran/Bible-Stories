@@ -1,10 +1,14 @@
 import { inject } from '@loopback/core';
 import {NotificationService} from './notification.service';
+import { repository } from '@loopback/repository';
+import { PushNotificationsRepository } from '../repositories';
 
 export class NotificationCron {
   constructor(
     @inject('services.notification.service')
     private notificationService: NotificationService,
+    @repository(PushNotificationsRepository)
+    public pushNotificationsRepository: PushNotificationsRepository
   ) {}
 
   /**
@@ -13,6 +17,7 @@ export class NotificationCron {
    * @param notificationData - Data for the notification (title, body, image).
    */
   async sendNotificationsWithThrottleAndFailures(
+    id: number,
     fcmTokens: string[], 
     notificationData: {title: string; body: string; image?: string}
   ) {
@@ -33,6 +38,13 @@ export class NotificationCron {
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
+
+    const newNotificationData = {
+      sentCount: fcmTokens.length,
+      failedCount: failedTokens.length
+    }
+
+    await this.pushNotificationsRepository.updateById(id, {notificationData : newNotificationData});
 
     // Log the final status of failed tokens after sending notifications
     console.log('Notifications sent with throttling. Failed tokens:', failedTokens);

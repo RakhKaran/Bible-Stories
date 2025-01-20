@@ -26,9 +26,18 @@ export class PushNotifications extends Entity {
   image?: object;
 
   @property({
-    typw: 'string'
+    type: 'string'
   })
   status: string;
+
+  @property({
+    type: 'object',
+    itemType : 'number'
+  })
+  notificationData: {
+    sentCount: number;
+    failedCount: number;
+  }
 
   @property({
     type: 'date',

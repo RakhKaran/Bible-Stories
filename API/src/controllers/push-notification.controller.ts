@@ -104,7 +104,7 @@ export class PushNotificationController {
         }
     
         // Step 4: Pass data to the cron job
-      this.notificationCronJob.setJobData(fcmTokens, data); // Pass the FCM tokens and notification data
+      this.notificationCronJob.setJobData(notification.id, fcmTokens, data); // Pass the FCM tokens and notification data
 
       // Step 5: Return success message
       return {

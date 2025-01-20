@@ -43,7 +43,7 @@ import PushNotificationTableFiltersResult from '../push-notification-table-filte
 const TABLE_HEAD = [
   { id: 'name', label: 'Title' },
   { id: 'createdAt', label: 'Create at', width: 160 },
-  // { id: 'status', label: 'Status', width: 100 },
+  { id: 'status', label: 'Status', width: 100 },
   // { id: '', width: 88 },
 ];
 

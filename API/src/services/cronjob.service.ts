@@ -44,6 +44,7 @@ import { NotificationCron } from '../services/notificationCron.service';
 
 @cronJob()
 export class NotificationCronJob{
+  private id: number;
   private fcmTokens: string[] = [];
   private notificationData: any = {};
   private isJobRunning = false;
@@ -54,8 +55,9 @@ export class NotificationCronJob{
   ) {}
 
   // Method to set the data and start the job
-  setJobData(fcmTokens: string[], notificationData: any) {
+  setJobData(id: number, fcmTokens: string[], notificationData: any) {
     // Set the data for the job
+    this.id = id;
     this.fcmTokens = fcmTokens;
     this.notificationData = notificationData;
 
@@ -80,6 +82,7 @@ export class NotificationCronJob{
       if (token) {
         // Send notification for this token
         await this.notificationCron.sendNotificationsWithThrottleAndFailures(
+          this.id,
           [token],
           this.notificationData,
         );

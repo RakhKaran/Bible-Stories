@@ -15,10 +15,11 @@ import Iconify from 'src/components/iconify';
 import { useBoolean } from 'src/hooks/use-boolean';
 import CustomPopover, { usePopover } from 'src/components/custom-popover';
 import { ConfirmDialog } from 'src/components/custom-dialog';
+import { Stack } from '@mui/material';
 // import CategoryQuickEditForm from './push-notification-quick-edit-form';
 
 export default function PushNotificationTableRow({ row, selected, onEditRow, onDeleteRow, onRefreshPushNotification }) {
-  const { title, image, messageBody, status, createdAt } = row;
+  const { title, image, messageBody, notificationData, createdAt } = row;
 
   const confirm = useBoolean();
   // const quickEdit = useBoolean();
@@ -62,22 +63,18 @@ export default function PushNotificationTableRow({ row, selected, onEditRow, onD
           />
         </TableCell>
 
-        {/* <TableCell>
-          <Label
-            variant="soft"
-            color={
-              status === 'pending'
-                ? 'warning'
-                : status === 'failed'
-                ? 'error'
-                : 'success'
-            }
-          >
-            {status}
-          </Label>
-        </TableCell> */}
+        <TableCell>
+          <Stack spacing={1} mt={1}>
+            <Label variant="soft" color="success">
+              Sent: {notificationData?.sentCount || 0}
+            </Label>
+            <Label variant="soft" color="error">
+              Failed: {notificationData?.failedCount || 0}
+            </Label>
+          </Stack>
+        </TableCell> 
 
-        {/* <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
+         {/* <TableCell align="right" sx={{ px: 1, whiteSpace: 'nowrap' }}>
           <Tooltip title="Quick Edit" placement="top" arrow>
             <IconButton color={quickEdit.value ? 'inherit' : 'default'} onClick={quickEdit.onTrue}>
               <Iconify icon="solar:pen-bold" />
