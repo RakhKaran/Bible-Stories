@@ -8,7 +8,7 @@ export default function RegisterPage() {
   return (
     <>
       <Helmet>
-        <title> Firebase: Register</title>
+        <title> Bible Stories: Register</title>
       </Helmet>
 
       <FirebaseRegisterView />

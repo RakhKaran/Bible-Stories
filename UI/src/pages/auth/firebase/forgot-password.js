@@ -8,7 +8,7 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <Helmet>
-        <title> Firebase: Forgot Password</title>
+        <title> Bible Stories: Forgot Password</title>
       </Helmet>
 
       <FirebaseForgotPasswordView />

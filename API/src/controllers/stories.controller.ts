@@ -807,7 +807,7 @@ export class StoriesController {
   }
 
    // get daily audio story with id for customer..
-   @get('/daily-story-by-id')
+   @get('/daily-audio')
    async fetchDailyAudioStoryById(
      @inject(RestBindings.Http.REQUEST) request: Request,
    ): Promise<{ success: boolean; message: string; data: object }> {

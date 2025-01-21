@@ -8,7 +8,7 @@ export default function LoginPage() {
   return (
     <>
       <Helmet>
-        <title> Firebase: Login</title>
+        <title> Bible Stories: Login</title>
       </Helmet>
 
       <FirebaseLoginView />
