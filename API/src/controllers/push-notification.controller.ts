@@ -1,13 +1,14 @@
 import { inject } from "@loopback/core";
 import { repository } from "@loopback/repository";
-import { get, getModelSchemaRef, HttpErrors, post, requestBody } from "@loopback/rest";
-import { authenticate } from "@loopback/authentication";
+import { get, getModelSchemaRef, HttpErrors, param, post, requestBody } from "@loopback/rest";
+import { authenticate, AuthenticationBindings } from "@loopback/authentication";
 import { BibleStoriesDataSource } from "../datasources";
-import { PushNotificationsRepository, UsersRepository } from "../repositories";
+import { CategoryRepository, PushNotificationsRepository, StoriesRepository, UsersRepository } from "../repositories";
 import { PermissionKeys } from "../authorization/permission-keys";
-import { PushNotifications } from "../models";
+import { PushNotifications, Stories } from "../models";
 import { NotificationService } from "../services/notification.service";
 import { NotificationCronJob } from "../services/cronjob.service";
+import { UserProfile } from "@loopback/security";
 
 export class PushNotificationController {
   constructor(
@@ -17,6 +18,10 @@ export class PushNotificationController {
     public pushNotificationsRepository : PushNotificationsRepository,
     @repository(UsersRepository)
     public usersRepository : UsersRepository,
+    @repository(CategoryRepository)
+    public categoryRepository : CategoryRepository,
+    @repository(StoriesRepository)
+    public storiesRepository : StoriesRepository,
     @inject('service.cronjob.service')
     private notificationCronJob : NotificationCronJob
   ) {}
@@ -50,6 +55,47 @@ export class PushNotificationController {
           success : true,
           message : 'Users List',
           data : users
+        }
+      }catch(error){
+        throw error;
+      }
+    }
+
+    // for optional data...
+    @authenticate({
+      strategy : 'jwt',
+      options : [PermissionKeys.ADMIN]
+    })
+    @get('/fetch-optional-data/{option}')
+    async fetchOptionalData(
+      @param.path.string('option') option : string
+    ) : Promise<{success : boolean; message: string; data: Array<object>}>{
+      try{
+        if(option && option !== 'none'){
+          if(option === 'category'){
+            const categoriesOption = await this.categoryRepository.find({fields : ['image', 'categoryName', 'id']});
+
+            return{
+              success : true,
+              message : 'category Data',
+              data : categoriesOption,
+            }
+          }
+
+          if(option === 'story'){
+            const storiesOption = await this.storiesRepository.find({fields : ['id', 'images', 'title']});
+
+            return{
+              success : true,
+              message : 'category Data',
+              data : storiesOption,
+            }
+          }
+        }
+        return{
+          success : false,
+          message : 'None Value Passed',
+          data : []
         }
       }catch(error){
         throw error;
@@ -96,6 +142,7 @@ export class PushNotificationController {
           // clientTokens: fcmTokens,
           title: notification.title, // Pass the title from the notification data
           body: notification.messageBody, // Pass the body from the notification data
+          optionalData: notification.optionalData,
         };
     
         // Optionally include image if it exists
@@ -118,7 +165,7 @@ export class PushNotificationController {
         message: 'Failed to start push notification job.',
       };
     }
-  }
+    }
 
     // get notifications on admin panel...
     @authenticate({
@@ -128,7 +175,7 @@ export class PushNotificationController {
     @get('/push-notifications/list')
     async fetchNewPushNotification(): Promise<{ success: boolean; message: string, data: PushNotifications[] }> {
       try{
-        const notifications = await this.pushNotificationsRepository.find();
+        const notifications = await this.pushNotificationsRepository.find({order: ['createdAt DESC']});
 
         return{
           success: true,
@@ -136,6 +183,42 @@ export class PushNotificationController {
           data: notifications
         }
       }catch(error){
+        throw error;
+      }
+    }
+
+    @authenticate({
+      strategy: 'jwt',
+      options: [PermissionKeys.LISTENER],
+    })
+    @get('/users-notifications')
+    async fetchUsersNotification(
+      @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile
+    ): Promise<{ success: boolean; message: string; data: PushNotifications[] }> {
+      try {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0); // Set to the start of today
+    
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999); // Set to the end of today
+    
+        // Fetch notifications for today where currentUser.id is in targetUsers array
+        const id = Number(currentUser.id);
+        const notifications = await this.pushNotificationsRepository.find({
+          where: {
+            createdAt: { gte: todayStart, lte: todayEnd },
+          },
+          order: ['createdAt DESC'],
+        });
+
+        const filteredNotifications = notifications.filter((not) => not.targetUsers.some((num) => num === id));
+      
+        return {
+          success: true,
+          message: 'Notifications fetched successfully',
+          data: filteredNotifications,
+        };
+      } catch (error) {
         throw error;
       }
     }

@@ -80,10 +80,12 @@ export class StoriesController {
     const repo = new DefaultTransactionalRepository(Stories, this.dataSource);
     const tx = await repo.beginTransaction(IsolationLevel.READ_COMMITTED);
     try{
-      await this.storiesRepository.create(storyData,{
+      const story = await this.storiesRepository.create(storyData,{
         transaction: tx,
       });
       await tx.commit();
+
+      await this.setDailyAudio(story.id!);
 
       return{
         success : true,
@@ -114,7 +116,7 @@ export class StoriesController {
       }
 
       // Fetching all stories
-      const stories = await this.storiesRepository.find();
+      const stories = await this.storiesRepository.find({order: ['createdAt DESC']});
 
       let filteredStories : any = stories;
 
@@ -476,11 +478,11 @@ export class StoriesController {
       await Promise.all(categories.map(async (cat) => {
         const stories = await this.storiesRepository.find({
           where: { categoryId: cat.id },
+          order: ['createdAt DESC'],
           limit : 5
         });   
         
         if(cat.categoryName.trim().toLowerCase() === 'Old Testament'.trim().toLowerCase()){
-            console.log('entered...')
           if (user && user.audioLanguage) {
             // Filter stories to include only audio matching the user's selected language
             stories.map((story) => {
@@ -636,6 +638,7 @@ export class StoriesController {
           where : {
             categoryId : categoryId
           },
+          order : ['createdAt DESC'],
           limit : limit,
           skip : skip
         }
@@ -740,4 +743,220 @@ export class StoriesController {
       throw error;
     }
   }
+
+  //set daily audio...
+  async setDailyAudio(id: number): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find the current daily audio
+      const dailyAudio = await this.storiesRepository.findOne({
+        where: { isDailyAudio: true },
+      });
+  
+      // If there's already a daily audio, update it to false
+      if (dailyAudio) {
+        await this.storiesRepository.updateById(dailyAudio.id, { isDailyAudio: false });
+      }
+  
+      // Set the new daily audio
+      await this.storiesRepository.updateById(id, { isDailyAudio: true });
+  
+      return {
+        success: true,
+        message: 'Audio set as daily audio successfully',
+      };
+    } catch (error) {
+      console.log('Error while setting daily audio:', error);
+      return {
+        success: false,
+        message: 'Failed to set daily audio. Please try again later.',
+      };
+    }  
+  }
+
+  //update audio as daily audio...
+  @authenticate({
+    strategy: 'jwt',
+    options: { required: [PermissionKeys.ADMIN] },
+  })
+  @patch('/daily-audio-story/{id}')
+  async updateDailyAudio(
+    @param.path.number('id') storyId: number
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find the story by ID
+      const story = await this.storiesRepository.findById(storyId);
+  
+      if (!story) {
+        throw new HttpErrors.NotFound('Story not found');
+      }
+  
+      const result = await this.setDailyAudio(story.id!);
+  
+      if (!result.success) {
+        throw new Error('Failed to update daily audio');
+      }
+  
+      return {
+        success: true,
+        message: 'Daily audio updated successfully',
+      };
+    } catch (error) {
+      console.log('Error while updating daily audio:', error);
+      throw new HttpErrors.InternalServerError('Error updating daily audio');
+    }
+  }
+
+   // get daily audio story with id for customer..
+   @get('/daily-story-by-id')
+   async fetchDailyAudioStoryById(
+     @inject(RestBindings.Http.REQUEST) request: Request,
+   ): Promise<{ success: boolean; message: string; data: object }> {
+     try {
+       const story = await this.storiesRepository.findOne({
+         where: { isDailyAudio : true },
+         include: [
+           {
+             relation: 'category',
+             scope: {
+               fields: {
+                 id: true,
+                 categoryName: true,
+               },
+             },
+           },
+         ],
+       });
+ 
+       if (!story) {
+         throw new HttpErrors.NotFound('Story not found');
+       }
+ 
+       // checking for header
+       const authHeader = request.headers.authorization;
+       let currentUser : any = {};
+       if(authHeader){
+         currentUser = await this.validateCredentials(authHeader);
+       }
+ 
+       let user: any = {};
+       if (currentUser.id) {
+         user = await this.usersRepository.findById(currentUser.id);
+       }
+ 
+       let filteredAudios : any = story.audios;
+ 
+       let isLiked = false;
+ 
+       let isDownload = false;
+ 
+       let lastDuration = 0;
+ 
+       // checking whether story is liked or not...
+       if(user){
+         const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
+ 
+         if(likedStory){
+           isLiked = true;
+         }
+       }
+       if (user && user.audioLanguage) {
+         // Filter first by user's audio language
+         filteredAudios = story.audios.filter(
+           (audio: any) => audio.language.id === user.audioLanguage
+         );
+       
+         // If no audio matches the user's audio language, fallback to English
+         if (filteredAudios.length === 0) {
+           filteredAudios = story.audios.filter(
+             (audio: any) => audio.language.code === 'en'
+           );
+         }
+       
+         console.log('filteredaudios', filteredAudios);
+       
+         const likedStory = await this.likedStoriesRepository.findOne({
+           where: { usersId: user.id, storiesId: story.id },
+         });
+       
+         if (likedStory) {
+           isLiked = true;
+         }
+       
+         const downloadStory = await this.downloadStoriesRepository.findOne({
+           where: { usersId: user.id, storiesId: story.id },
+         });
+       
+         if (downloadStory) {
+           isDownload = true;
+         }
+       } else if (user && !user.audioLanguage && user.appLanguage) {
+         // Similar logic for app language, prioritize app language first
+         filteredAudios = story.audios.filter(
+           (audio: any) =>
+             audio.language.langName?.toLowerCase() === user.appLanguage?.toLowerCase()
+         );
+       
+         if (filteredAudios.length === 0) {
+           filteredAudios = story.audios.filter(
+             (audio: any) => audio.language.code === 'en'
+           );
+         }
+       
+         const likedStory = await this.likedStoriesRepository.findOne({
+           where: { usersId: user.id, storiesId: story.id },
+         });
+       
+         if (likedStory) {
+           isLiked = true;
+         }
+       
+         const downloadStory = await this.downloadStoriesRepository.findOne({
+           where: { usersId: user.id, storiesId: story.id },
+         });
+       
+         if (downloadStory) {
+           isDownload = true;
+         }
+       } else {
+         // Default to English audio
+         filteredAudios = story.audios.filter(
+           (audio: any) => audio.language.code === 'en'
+         );
+       }      
+ 
+       if(user){
+         console.log(user);
+         console.log(filteredAudios);
+         const audioHistory = await this.audioHistoryRepository.findOne({
+           where : {
+             usersId : user.id,
+             storiesId : story.id,
+             language : filteredAudios[0].language?.id
+           }
+         });
+ 
+         console.log(audioHistory);
+ 
+         if(audioHistory){
+           lastDuration = audioHistory.lastDuration
+         }
+       }
+ 
+       const filteredStory = {
+         ...story,
+         audios: filteredAudios,
+         isLiked,
+         isDownload,
+         lastDuration
+       };
+ 
+       return {
+         success: true,
+         message: 'Story data',
+         data: filteredStory,
+       };
+     } catch (error) {
+       throw error;
+     }
+   }
 }

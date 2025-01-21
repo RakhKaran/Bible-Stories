@@ -1,5 +1,6 @@
 import isEqual from 'lodash/isEqual';
 import { useState, useCallback, useEffect } from 'react';
+import { useSnackbar } from 'notistack';
 // @mui
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
@@ -46,9 +47,10 @@ const TABLE_HEAD = [
   { id: 'title', label: 'Title' },
   { id: 'audio', label: 'Audio'},
   { id: 'Language', label: 'Language'},
+  { id: 'dailyAudio', label: 'Daily Audio'},
   { id: 'createdAt', label: 'Create at', width: 160 },
   // { id: 'status', label: 'Status', width: 100 },
-  { id: ''},
+  { id: '',},
   { id: '', width: 88 },
 ];
 
@@ -65,6 +67,7 @@ const defaultFilters = {
 // ----------------------------------------------------------------------
 
 export default function StoryListView() {
+  const { enqueueSnackbar } = useSnackbar()
   const table = useTable();
 
   const settings = useSettingsContext();
@@ -168,6 +171,18 @@ export default function StoryListView() {
       const response = await axiosInstance.post('/users/set-lang',{audioLanguage : langId});
       if(response?.data?.success){
         localStorage.setItem('audioLanguage', langId);
+        refreshStories();
+      }
+    }catch(error){
+      console.error(error);
+    }
+  }
+
+  const handleChangeDailyAudioToggle = async(id) => {
+    try{
+      const response = await axiosInstance.patch(`/daily-audio-story/${id}`);
+      if(response?.data?.success){
+        enqueueSnackbar(response?.data?.message, {variant : 'success'});
         refreshStories();
       }
     }catch(error){
@@ -279,6 +294,7 @@ export default function StoryListView() {
                         setActiveAudioIndex={setActiveAudioIndex}
                         categoriesData = {categoriesData}
                         languagesData = {languagesData}
+                        handleChangeDailyAudioToggle = {() => handleChangeDailyAudioToggle(row.id)}
                       />
                     ))}
 

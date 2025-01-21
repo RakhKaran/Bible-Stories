@@ -57,7 +57,7 @@ export class NotificationService {
     title: string;
     body: string;
     image?: string;
-    data?: FCMData;
+    optionalData?: { type: string; value: number | string };
   }) {
     const accessToken = await this.getAccessToken(); // Get the Bearer Token
     if (!accessToken) {
@@ -72,7 +72,10 @@ export class NotificationService {
           body: notificationData.body,
           image: notificationData.image, // Optional: Image URL for notification
         },
-        data: notificationData.data || {}, // Optional: Custom payload
+        data: {
+          type: notificationData.optionalData?.type || '',
+          value: notificationData.optionalData?.value?.toString() || '',
+        }, // Optional: Custom payload
         token, // Send message to a single token
       },
     };

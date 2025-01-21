@@ -43,6 +43,11 @@ export class Stories extends Entity {
     fileName: string
   }>
 
+  @property({
+    type : 'boolean',
+  })
+  isDailyAudio: boolean;
+
   @belongsTo(() => Category)
   categoryId: number;
 

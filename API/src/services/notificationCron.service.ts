@@ -19,7 +19,7 @@ export class NotificationCron {
   async sendNotificationsWithThrottleAndFailures(
     id: number,
     fcmTokens: string[], 
-    notificationData: {title: string; body: string; image?: string}
+    notificationData: {title: string; body: string; image?: string; optionalData?: {type: string; value: number}}
   ) {
     const failedTokens: string[] = [];
     const delay = 100; // Millisecond delay between requests

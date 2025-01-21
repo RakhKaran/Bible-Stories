@@ -51,6 +51,14 @@ export class PushNotifications extends Entity {
   targetUsers: Array<number>;
 
   @property({
+    type: 'object',
+  })
+  optionalData?: {
+    type: string;
+    value: number;
+  };
+
+  @property({
     type: 'date',
   })
   createdAt?: Date;

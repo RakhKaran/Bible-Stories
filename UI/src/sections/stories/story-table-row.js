@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 import PropTypes from 'prop-types';
 import { format } from 'date-fns';
 import { paths } from 'src/routes/paths';
+import { useSnackbar } from 'notistack';
 // @mui
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
@@ -15,6 +16,7 @@ import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
+import { Switch } from '@mui/material';
 // hooks
 import { useBoolean } from 'src/hooks/use-boolean';
 // components
@@ -35,9 +37,11 @@ export default function StoryTableRow({
   languagesData,
   activeAudioIndex,
   setActiveAudioIndex,
+  handleChangeDailyAudioToggle
 }) {
+  const {enqueueSnackbar} = useSnackbar();
   const navigate = useNavigate();
-  const { title, subTitle, audios, images, createdAt } = row;
+  const { title, subTitle, audios, images, createdAt, isDailyAudio } = row;
   
   const audioRef = useRef([]); // Single reference array for all audio elements
 
@@ -106,6 +110,21 @@ export default function StoryTableRow({
 
         <TableCell>
           {audios[0]?.language?.nativeLangName}
+        </TableCell>
+
+        <TableCell>
+          {/* Add a toggle switch for isDailyAudio */}
+          <Switch
+            checked={isDailyAudio} // Set the toggle state based on isDailyAudio
+            onChange={() => {
+              if(isDailyAudio){
+                enqueueSnackbar('One daily audio is required',{variant : 'info'})
+              }else{
+                handleChangeDailyAudioToggle(row.id);
+              }
+            }} // Call the handler on toggle change
+            color="primary"
+          />
         </TableCell>
 
         <TableCell>
@@ -275,4 +294,5 @@ StoryTableRow.propTypes = {
   setActiveAudioIndex: PropTypes.func, // Function to update the active audio index
   categoriesData: PropTypes.array,
   languagesData: PropTypes.array,
+  handleChangeDailyAudioToggle: PropTypes.func
 };
