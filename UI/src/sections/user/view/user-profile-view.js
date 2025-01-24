@@ -92,7 +92,7 @@ export default function UserProfileView() {
           coverUrl={_userAbout.coverUrl}
         />
 
-        <Tabs
+        {/* <Tabs
           value={currentTab}
           onChange={handleChangeTab}
           sx={{
@@ -113,9 +113,9 @@ export default function UserProfileView() {
           {TABS.map((tab) => (
             <Tab key={tab.value} value={tab.value} icon={tab.icon} label={tab.label} />
           ))}
-        </Tabs>
+        </Tabs> */}
       </Card>
-
+{/* 
       {currentTab === 'profile' && <ProfileHome info={_userAbout} posts={_userFeeds} />}
 
       {currentTab === 'followers' && <ProfileFollowers followers={_userFollowers} />}
@@ -128,7 +128,7 @@ export default function UserProfileView() {
         />
       )}
 
-      {currentTab === 'gallery' && <ProfileGallery gallery={_userGallery} />}
+      {currentTab === 'gallery' && <ProfileGallery gallery={_userGallery} />} */}
     </Container>
   );
 }

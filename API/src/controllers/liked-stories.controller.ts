@@ -4,7 +4,7 @@ import { authenticate, AuthenticationBindings } from "@loopback/authentication";
 import { get, param, post } from "@loopback/rest";
 import { UserProfile } from "@loopback/security";
 import { BibleStoriesDataSource } from "../datasources";
-import { LikedStoriesRepository, UsersRepository } from "../repositories";
+import { AudioHistoryRepository, LikedStoriesRepository, UsersRepository } from "../repositories";
 import { PermissionKeys } from "../authorization/permission-keys";
 import { LikedStories } from "../models";
 
@@ -16,6 +16,8 @@ export class LikedStoriesController {
     public likedStoriesRepository : LikedStoriesRepository,
     @repository(UsersRepository)
     public usersRepository : UsersRepository,
+        @repository(AudioHistoryRepository)
+        public audioHistoryRepository : AudioHistoryRepository,
   ) {}
 
   // liked or disliked story...
@@ -103,52 +105,90 @@ export class LikedStoriesController {
       let filteredStories: any = filteredLikedStories;
   
       if (user && user.audioLanguage) {
-        filteredStories = filteredLikedStories.map((story: any) => {
-          const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
-            audio?.language?.id === user.audioLanguage
-          );
-  
-          const fallbackAudios = filteredAudios.length
-            ? filteredAudios
-            : story?.stories?.audios?.filter((audio: any) => audio?.language?.code === 'en');
-  
-          return {
-            ...story,
-            stories: {
-              ...story.stories,
-              audios: fallbackAudios,
-            },
-          };
-        });
+        filteredStories = await Promise.all(
+            filteredLikedStories.map(async(story: any) => {
+            const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
+              audio?.language?.id === user.audioLanguage
+            );
+    
+            const fallbackAudios : any = filteredAudios.length
+              ? filteredAudios
+              : story?.stories?.audios?.filter((audio: any) => audio?.language?.code === 'en');
+    
+              let lastDuration = 0;
+
+              const audioHistory = await this.audioHistoryRepository.findOne({
+                where : {
+                  usersId : user.id,
+                  storiesId : story?.stories?.id,
+                  language : fallbackAudios[0].language?.id
+                }
+              });
+    
+    
+              if(audioHistory){
+                lastDuration = audioHistory.lastDuration
+              }
+
+            return {
+              ...story,
+              stories: {
+                ...story.stories,
+                audios: fallbackAudios,
+                lastDuration
+              },
+            };
+          })
+        )
       } else if (user && !user.audioLanguage && user.appLanguage) {
-        filteredStories = filteredLikedStories.map((story: any) => {
-          const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
-            audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
-          );
-  
-          const fallbackAudios = filteredAudios.length
-            ? filteredAudios
-            : story?.stories?.audios?.filter((audio: any) => audio?.language?.code === 'en');
-  
-          return {
-            ...story,
-            stories: {
-              ...story.stories,
-              audios: fallbackAudios,
-            },
-          };
-        });
+          filteredStories = await Promise.all(
+            filteredLikedStories.map(async(story: any) => {
+            const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
+              audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
+            );
+    
+            const fallbackAudios : any = filteredAudios.length
+              ? filteredAudios
+              : story?.stories?.audios?.filter((audio: any) => audio?.language?.code === 'en');
+    
+              let lastDuration = 0;
+
+              const audioHistory = await this.audioHistoryRepository.findOne({
+                where : {
+                  usersId : user.id,
+                  storiesId : story?.stories?.id,
+                  language : fallbackAudios[0].language?.id
+                }
+              });
+    
+    
+              if(audioHistory){
+                lastDuration = audioHistory.lastDuration
+              }
+
+            return {
+              ...story,
+              stories: {
+                ...story.stories,
+                audios: fallbackAudios,
+                lastDuration
+              },
+            };
+          })
+        )
       } else {
         filteredStories = filteredLikedStories.map((story: any) => {
           const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
             audio?.language?.code === 'en'
           );
-  
+          
+          const lastDuration = 0;
           return {
             ...story,
             stories: {
               ...story.stories,
               audios: filteredAudios,
+              lastDuration
             },
           };
         });
