@@ -18,6 +18,7 @@ import { EmailManager } from '../services/email.service';
 import AdminForgotPasswordEmailTemplate from '../templates/adminForgetPassword.template';
 import { FirebaseAdmin } from '../services/firebase.service';
 import { CurrentUser } from '../types';
+import { UserAnalyticsService } from '../services/user-analytics.service';
 
 // ----------------------------------------------------------------------------
 export class UsersController {
@@ -30,6 +31,8 @@ export class UsersController {
     public userService: MyUserService,
     @inject('service.jwt.service')
     public jwtService: JWTService,
+    @inject('service.user-analytics.service')
+    public userAnalyticsService: UserAnalyticsService,
     @inject(EmailManagerBindings.SEND_MAIL)
     public emailManager: EmailManager,
     @inject('service.firebase-admin')
@@ -782,34 +785,52 @@ export class UsersController {
     }
   }
 
-  // fetch all user data
+  // fetch users
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN]},
-  })  
+    options: { required: [PermissionKeys.ADMIN] },
+  })
   @get('/users')
-  async fetchUsers(
-  ) : Promise<object>{
-    try{
+  async fetchUsers(): Promise<object> {
+    try {
       const users = await this.usersRepository.find();
-
-      if(users.length <= 0){
-        return{
-          success : false,
-          message : 'No users data found'
+  
+      if (users.length <= 0) {
+        return {
+          success: false,
+          message: 'No users data found'
+        };
+      }
+  
+      const usersWithLastLogin = await Promise.all(users.map(async (user) => {
+        if (user.id !== undefined) {
+          const lastLogin = await this.userAnalyticsService.getUserLastLogin(user.id);
+          return {
+            ...user,
+            lastLogin: lastLogin.loginDate || 'N/A'
+          };
+        } else {
+          return {
+            ...user,
+            lastLogin: 'N/A'
+          };
         }
-      }
-
-      return{
-        success : true,
-        message : 'Users Data',
-        data : users
-      }
-    }catch(error){
-      throw error;
+      }));      
+  
+      return {
+        success: true,
+        message: 'Users Data',
+        data: usersWithLastLogin
+      };
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return {
+        success: false,
+        message: 'Error fetching user data'
+      };
     }
   }
-
+  
   // setting app language
   @authenticate({
     strategy: 'jwt',

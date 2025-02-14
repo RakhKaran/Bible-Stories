@@ -187,6 +187,10 @@ export class CommentsController {
   }
 
   // delete comment and its replies...
+  @authenticate({
+    strategy : 'jwt',
+    options : [PermissionKeys.ADMIN, PermissionKeys.LISTENER]
+  })
   @del('/comment/{commentId}')
   async deleteCommentById(
     @param.path.number('commentId') commentId : number

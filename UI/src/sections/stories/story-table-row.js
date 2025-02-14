@@ -10,7 +10,7 @@ import { useSnackbar } from 'notistack';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
+// import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
@@ -21,7 +21,7 @@ import { Switch } from '@mui/material';
 import { useBoolean } from 'src/hooks/use-boolean';
 // components
 import Iconify from 'src/components/iconify';
-import CustomPopover, { usePopover } from 'src/components/custom-popover';
+// import CustomPopover, { usePopover } from 'src/components/custom-popover';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import StoryQuickEditForm from './story-quick-edit-form';
 
@@ -47,7 +47,7 @@ export default function StoryTableRow({
 
   const confirm = useBoolean();
   const quickEdit = useBoolean();
-  const popover = usePopover();
+  // const popover = usePopover();
 
   // Handle audio play and pause logic
   const handleAudioPlay = (index) => {
@@ -239,6 +239,7 @@ export default function StoryTableRow({
         onRefreshStories={onRefreshStories}
         categories={categoriesData}
         languages={languagesData}
+        categoryId={row.categoryId}
       />
 
       {/* <CustomPopover

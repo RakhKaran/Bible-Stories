@@ -4,18 +4,21 @@
 // RepliesView.js
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import { useSnackbar } from "notistack";
 import { Card, CardContent, Stack, Typography, Avatar, IconButton, MenuItem, CircularProgress, Box } from "@mui/material";
 import Iconify from "src/components/iconify";
 import CustomPopover, { usePopover } from "src/components/custom-popover";
 import { useGetCommentRepliesList } from "src/api/comments-api/comments"; // Assuming you have an API for fetching replies
+import axiosInstance from "src/utils/axios";
 
 const RepliesView = ({ commentId }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const popover = usePopover();
   const [repliesData, setRepliesData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [visibleReplies, setVisibleReplies] = useState({}); // State to track visible replies
 
-  const { replies, repliesEmpty, repliesCount, refreshCommentsReplies } = useGetCommentRepliesList(commentId, 10, 0);
+  const { replies, repliesEmpty, refreshCommentsReplies } = useGetCommentRepliesList(commentId, 10, 0);
 
   useEffect(() => {
     if (replies && !repliesEmpty) {
@@ -30,6 +33,18 @@ const RepliesView = ({ commentId }) => {
       [commentId]: !prev[commentId], // Toggle the visibility of replies for the clicked comment
     }));
   };
+
+  const handleDeleteReply = async(replyId) => {
+    try{
+      const response = await axiosInstance.delete(`/comment/${replyId}`);
+      if(response?.data?.success){
+        enqueueSnackbar("Reply deleted", {variant : "success"});
+        refreshCommentsReplies();
+      }
+    }catch(error){
+      console.error("error while deleting reply", error);
+    }
+  }
 
   // Recursive function to render replies
   const renderReplies = (replies) => replies.map((reply, index) => (
@@ -51,8 +66,15 @@ const RepliesView = ({ commentId }) => {
           </Stack>
 
           <CustomPopover open={popover.open} onClose={popover.onClose} arrow="right-top" sx={{ width: 160 }}>
-            <MenuItem onClick={() => { popover.onClose(); }}>Edit</MenuItem>
-            <MenuItem onClick={() => { popover.onClose(); }}>Delete</MenuItem>
+            <MenuItem 
+              onClick={
+                () => { 
+                  handleDeleteReply(reply.id);
+                  popover.onClose(); 
+                  }
+              }>
+              Delete
+            </MenuItem>
           </CustomPopover>
 
           {/* Comment Text or Audio */}

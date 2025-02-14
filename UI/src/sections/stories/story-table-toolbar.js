@@ -51,7 +51,7 @@ export default function StoryTableToolbar({
           pr: { xs: 2.5, md: 1 },
         }}
       >
-                  <FormControl
+          <FormControl
              sx={{
               flexShrink: 0,
               width: { xs: 1, md: 200 },
@@ -61,7 +61,7 @@ export default function StoryTableToolbar({
             <Select
               value={filters.language}
               onChange={handleFilterlanguage}
-              label='Select category..'
+              label='Language'
               labelId='lang-label'
             >
               {languagesData?.length > 0 ? languagesData.map((lang) => (
@@ -85,7 +85,7 @@ export default function StoryTableToolbar({
             <Select
               value={filters.category}
               onChange={handleFilterCategory}
-              label='Select category..'
+              label='Category'
               labelId='cat-label'
             >
               {categoriesData?.length > 0 ? categoriesData.map((cat) => (

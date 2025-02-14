@@ -1,46 +1,57 @@
-// import { CronJob, cronJob } from '@loopback/cron';
-// import { inject } from '@loopback/core';
-// import { NotificationCron } from '../services/notificationCron.service';
-
-// @cronJob()
-// export class NotificationCronJob extends CronJob {
-//   private fcmTokens: string[] = [];
-//   private notificationData: any = {};
-
-//   constructor(
-//     @inject('service.notificationcronjob.service')
-//     private notificationCron: NotificationCron,
-//   ) {
-//     super({
-//       cronTime: '0 * * * *', // Every hour, for example, adjust as needed
-//       onTick: async () => {
-//         await this.runJob();
-//       },
-//     });
-//   }
-
-//   // Method to set the data that will be used when the job runs
-//   setJobData(fcmTokens: string[], notificationData: any) {
-//     this.fcmTokens = fcmTokens;
-//     this.notificationData = notificationData;
-//   }
-
-//   async runJob() {
-//     console.log('Notification cron job started at', new Date());
-//     if (this.fcmTokens.length > 0) {
-//       await this.notificationCron.sendNotificationsWithThrottleAndFailures(
-//         this.fcmTokens,
-//         this.notificationData,
-//       );
-//     }
-//     console.log('Notification cron job finished at', new Date());
-//   }
-// }
-
-
 import { CronJob, cronJob } from '@loopback/cron';
 import { inject } from '@loopback/core';
 import { NotificationCron } from '../services/notificationCron.service';
+import { AudioHistoryRepository } from '../repositories';
+import { repository } from '@loopback/repository';
+
+export class DailyNotificationCronJob extends CronJob {
+  constructor(
+    @repository(AudioHistoryRepository)
+    private audioHistoryRepository: AudioHistoryRepository,
+  ) {
+    super({
+      cronTime: '0 0 * * *',
+      onTick: async () => {
+        console.log('Running daily notification job');
+        await this.audioHistoryRepository.updateAll({ dailyCumulativeListeningDuration: 0 });
+      },
+      start: true,
+    });
+  }
+}
+
+export class WeeklyNotificationCronJob extends CronJob {
+  constructor(
+    @repository(AudioHistoryRepository)
+    private audioHistoryRepository: AudioHistoryRepository,
+  ) {
+    super({
+      cronTime: '0 0 * * 0',
+      onTick: async () => {
+        console.log('Running weekly notification job');
+        await this.audioHistoryRepository.updateAll({ weeklyCumulativeListeningDuration: 0 });
+      },
+      start: true,
+    });
+  }
+}
+
+export class MonthlyNotificationCronJob extends CronJob {
+  constructor(
+    @repository(AudioHistoryRepository)
+    private audioHistoryRepository: AudioHistoryRepository,
+  ) {
+    super({
+      cronTime: '0 0 1 * *',
+      onTick: async () => {
+        console.log('Running monthly notification job');
+        await this.audioHistoryRepository.updateAll({ monthlyCumulativeListeningDuration: 0 });
+      },
+      start: true,
+    });
+  }
+}
+
 
 @cronJob()
 export class NotificationCronJob{

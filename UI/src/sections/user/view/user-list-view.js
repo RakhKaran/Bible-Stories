@@ -52,6 +52,7 @@ const TABLE_HEAD = [
   { id: 'phoneNumber', label: 'Phone Number', width: 180 },
   { id: 'email', label: 'Email', width: 220 },
   { id: 'role', label: 'Role', width: 180 },
+  { id: 'lastLogin', label: 'Last Login'},
   { id: 'status', label: 'Status', width: 100 },
   { id: '', width: 88 },
 ];

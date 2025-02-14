@@ -22,7 +22,7 @@ import { Stack, TableBody, TableCell, TableHead, TableRow, Typography, Table } f
 
 // ----------------------------------------------------------------------
 
-export default function StoryQuickEditForm({ currentStoryId, open, onClose, onRefreshStories, categories, languages }) {
+export default function StoryQuickEditForm({ currentStoryId, open, onClose, onRefreshStories, categories, languages, categoryId }) {
   const { enqueueSnackbar } = useSnackbar();
   const [currentStory, setCurrentStory] = useState();
   const categoriesData = categories;
@@ -42,6 +42,13 @@ export default function StoryQuickEditForm({ currentStoryId, open, onClose, onRe
       console.error(error);
     }
   }
+
+  useEffect(() => {
+    if(open){
+      console.log(categories);
+      console.log(currentStoryId);
+    }
+  },[open])
 
   // story....
   useEffect(() => {
@@ -83,7 +90,7 @@ export default function StoryQuickEditForm({ currentStoryId, open, onClose, onRe
     () => ({
       title: currentStory?.title || '',
       subTitle: currentStory?.subTitle || '',
-      category: currentStory?.categoryId ? categoriesData.find((cat) => cat.id === currentStory.categoryId).id : undefined,
+      category: categoryId || undefined,
       audios: currentStory?.audios || [],
       images: currentStory?.images || [],
       language: undefined,
@@ -113,6 +120,22 @@ export default function StoryQuickEditForm({ currentStoryId, open, onClose, onRe
     control,
     name: 'audios',
   });
+
+  useEffect(() => {
+    if (currentStory) {
+      const updatedValues = {
+        title: currentStory.title || '',
+        subTitle: currentStory.subTitle || '',
+        category: currentStory.categoryId ? categoriesData.find((cat) => cat.id === currentStory.categoryId)?.id : undefined,
+        audios: currentStory.audios || [],
+        images: currentStory.images || [],
+        language: undefined,
+        audio: undefined,
+        duration: undefined
+      };
+      reset(updatedValues);
+    }
+  }, [currentStory, categoriesData, reset]);
 
   const handleAddNewAudio = () => {
     if (newAudio.language && newAudio.audio && newAudio.duration) {
@@ -469,6 +492,7 @@ export default function StoryQuickEditForm({ currentStoryId, open, onClose, onRe
 
 StoryQuickEditForm.propTypes = {
   currentStoryId: PropTypes.number,
+  categoryId: PropTypes.number,
   onClose: PropTypes.func,
   open: PropTypes.bool,
   onRefreshStories: PropTypes.func,

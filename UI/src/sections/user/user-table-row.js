@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { format } from 'date-fns';
 // @mui
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
@@ -22,7 +23,7 @@ import UserQuickEditForm from './user-quick-edit-form';
 // ----------------------------------------------------------------------
 
 export default function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow, onRefreshUsers }) {
-  const { firstName, lastName,  avatar, email, permissions, isActive, phoneNumber } = row;
+  const { firstName, lastName,  avatar, email, permissions, isActive, phoneNumber, lastLogin } = row;
 
   const name = `${firstName || ''} ${lastName || ''}`
 
@@ -58,6 +59,20 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{email || 'Not Available'}</TableCell>
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{role}</TableCell>
+
+        <TableCell>
+          {lastLogin !== 'N/A' ? <ListItemText
+            primary={format(new Date(lastLogin), 'dd MMM yyyy')}
+            secondary={format(new Date(lastLogin), 'p')}
+            primaryTypographyProps={{ typography: 'body2', noWrap: true }}
+            secondaryTypographyProps={{
+              mt: 0.5,
+              component: 'span',
+              typography: 'caption',
+            }}
+          /> : 'N/A'}
+        </TableCell>
+        
 
         <TableCell>
           <Label

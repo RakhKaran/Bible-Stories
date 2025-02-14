@@ -12,7 +12,6 @@ import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 export default function StoryQuestionsTableToolbar({
   filters,
   onFilters,
-  categoriesData,
   languagesData,
   onChangeLanguage
 }) {
@@ -54,7 +53,7 @@ export default function StoryQuestionsTableToolbar({
           <Select
             value={filters.language}
             onChange={handleFilterlanguage}
-            label='Select category..'
+            label='Language'
             labelId='lang-label'
           >
             {languagesData?.length > 0 ? languagesData.map((lang) => (
@@ -90,7 +89,6 @@ export default function StoryQuestionsTableToolbar({
 StoryQuestionsTableToolbar.propTypes = {
   filters: PropTypes.object,
   onFilters: PropTypes.func,
-  categoriesData: PropTypes.array,
   languagesData: PropTypes.array,
   onChangeLanguage: PropTypes.func
 };

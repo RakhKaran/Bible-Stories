@@ -109,4 +109,25 @@ export class UserAnalyticsService {
       };
     }
   }
+
+  async getUserLastLogin(userId: number): Promise<{ success: boolean, message: string, loginDate: string }> {
+    try {
+      const userAnalytics = await this.userAnalyticsRepository.findOne({
+        where: { usersId: userId }
+      });
+  
+      return {
+        success: true,
+        message: 'User\'s Last Login',
+        loginDate: userAnalytics?.updatedAt?.toString() || ''
+      };
+    } catch (error) {
+      console.log("Error while fetching last login: ", error);
+      return {
+        success: false,
+        message: 'Error fetching last login',
+        loginDate: ''
+      };
+    }
+  }
 }

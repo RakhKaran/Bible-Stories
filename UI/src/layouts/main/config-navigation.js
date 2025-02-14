@@ -74,9 +74,4 @@ export const navConfig = [
       },
     ],
   },
-  {
-    title: 'Docs',
-    icon: <Iconify icon="solar:notebook-bold-duotone" />,
-    path: paths.docs,
-  },
 ];

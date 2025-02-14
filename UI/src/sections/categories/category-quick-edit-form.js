@@ -134,7 +134,7 @@ export default function CategoryQuickEditForm({ currentCategory, open, onClose, 
                 Active
               </MenuItem>
               <MenuItem value={false}>
-                InActive
+                In-Active
               </MenuItem>
             </RHFSelect>
 
