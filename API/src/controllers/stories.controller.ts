@@ -449,6 +449,8 @@ export class StoriesController {
 
       let user : any = {};
 
+      console.log(authHeader);
+
       if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
         currentUser = await this.validateCredentials(authHeader);
       }
