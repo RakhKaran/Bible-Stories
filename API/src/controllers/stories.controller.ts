@@ -686,6 +686,7 @@ export class StoriesController {
       }
 
       console.log('response from api', response);
+      console.log('old testament stories', oldTestamentStories);
       
       return{
         success : true,
