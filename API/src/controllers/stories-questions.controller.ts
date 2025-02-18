@@ -93,7 +93,7 @@ export class StoriesQuestionsController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
-      if(authHeader){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
         currentUser = await this.validateCredentials(authHeader);
       }
       // Fetching user for audio language
@@ -213,7 +213,7 @@ export class StoriesQuestionsController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
-      if(authHeader){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
         currentUser = await this.validateCredentials(authHeader);
       }
 
