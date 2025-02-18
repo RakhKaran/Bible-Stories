@@ -675,6 +675,17 @@ export class StoriesController {
           }
         }
       }))
+
+      const response = {
+        success : true,
+        message : 'Audio list',
+        data : {
+          oldTestamentStories : oldTestamentStories,
+          newTestamentStories : newTestamentStories
+        }
+      }
+
+      console.log('response from api', response);
       
       return{
         success : true,
