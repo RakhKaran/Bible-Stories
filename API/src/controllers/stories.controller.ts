@@ -106,7 +106,7 @@ export class StoriesController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
       // Fetching user for audio language
@@ -239,7 +239,7 @@ export class StoriesController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
 
@@ -451,7 +451,7 @@ export class StoriesController {
 
       console.log(authHeader);
 
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
 
@@ -715,7 +715,7 @@ export class StoriesController {
       let currentUser : any = {};
       let user : any = {};
 
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined  && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       };
 
@@ -963,7 +963,7 @@ export class StoriesController {
        // checking for header
        const authHeader = request.headers.authorization;
        let currentUser : any = {};
-       if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
+       if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
          currentUser = await this.validateCredentials(authHeader);
        }
  
