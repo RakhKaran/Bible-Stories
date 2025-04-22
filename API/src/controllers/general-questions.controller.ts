@@ -92,7 +92,7 @@ export class GeneralQuestionsController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
       // Fetching user for audio language
@@ -212,7 +212,7 @@ export class GeneralQuestionsController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined){
+      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
 
