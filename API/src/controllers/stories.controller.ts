@@ -261,7 +261,8 @@ export class StoriesController {
       // checking whether story is liked or not...
       if(user){
         const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
-
+        console.log('user', user);
+        console.log('liked stories', likedStory);
         if(likedStory){
           isLiked = true;
         }
