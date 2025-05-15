@@ -82,7 +82,7 @@ export class NotificationService {
 
     try {
       const response = await this.axiosInstance.post(
-        'https://fcm.googleapis.com/v1/projects/biblestories-733b5/messages:send', // FCM v1 endpoint
+        'https://fcm.googleapis.com/v1/projects/bible-stories-vzdejw/messages:send', // FCM v1 endpoint
         messageData,
         {
           headers: {
