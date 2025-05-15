@@ -259,8 +259,15 @@ export class StoriesController {
       let lastDuration = 0;
 
       // checking whether story is liked or not...
-      if(user){
-        const likedStory = await this.likedStoriesRepository.findOne({where : {usersId : user.id, storiesId : story.id}});
+      if(user && Object.keys(user).length > 0){
+        const likedStory = await this.likedStoriesRepository.findOne({
+          where: {
+            and: [
+              { usersId: user.id },
+              { storiesId: story.id }
+            ]
+          }
+        });
         console.log('user', user);
         console.log('liked stories', likedStory);
         if(likedStory){
@@ -285,8 +292,14 @@ export class StoriesController {
         console.log('filteredaudios', filteredAudios);
       
         const likedStory = await this.likedStoriesRepository.findOne({
-          where: { usersId: user.id, storiesId: story.id },
+          where: {
+            and: [
+              { usersId: user.id },
+              { storiesId: story.id }
+            ]
+          }
         });
+
       
         if (likedStory) {
           isLiked = true;
@@ -336,7 +349,7 @@ export class StoriesController {
         );
       }      
 
-      if(user){
+      if(user && Object.keys(user).length > 0){
         const audioHistory = await this.audioHistoryRepository.findOne({
           where : {
             usersId : user.id,
