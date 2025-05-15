@@ -252,6 +252,8 @@ export class StoriesController {
 
       let isLiked = false;
 
+      console.log('data_enter', isLiked );
+
       let isDownload = false;
 
       let lastDuration = 0;
@@ -263,6 +265,8 @@ export class StoriesController {
         if(likedStory){
           isLiked = true;
         }
+
+        console.log('data_1', isLiked );
       }
       if (user && user.audioLanguage) {
         // Filter first by user's audio language
@@ -286,6 +290,7 @@ export class StoriesController {
         if (likedStory) {
           isLiked = true;
         }
+        console.log('data_2', isLiked );
       
         const downloadStory = await this.downloadStoriesRepository.findOne({
           where: { usersId: user.id, storiesId: story.id },
@@ -314,6 +319,7 @@ export class StoriesController {
         if (likedStory) {
           isLiked = true;
         }
+        console.log('data_3', isLiked );
       
         const downloadStory = await this.downloadStoriesRepository.findOne({
           where: { usersId: user.id, storiesId: story.id },
@@ -343,6 +349,8 @@ export class StoriesController {
           lastDuration = audioHistory.lastDuration
         }
       }
+
+      console.log('data_last', isLiked );
 
       const filteredStory = {
         ...story,
