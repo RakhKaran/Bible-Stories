@@ -248,6 +248,8 @@ export class StoriesController {
         user = await this.usersRepository.findById(currentUser.id);
       }
 
+      console.log('user', user);
+
       let filteredAudios : any = story.audios;
 
       let isLiked = false;
