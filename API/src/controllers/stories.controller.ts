@@ -239,6 +239,7 @@ export class StoriesController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
+      console.log('Auth header', authHeader);
       if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
