@@ -22,8 +22,8 @@ import UserQuickEditForm from './user-quick-edit-form';
 
 // ----------------------------------------------------------------------
 
-export default function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow, onRefreshUsers }) {
-  const { firstName, lastName,  avatar, email, permissions, isActive, phoneNumber, lastLogin } = row;
+export default function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow, onRefreshUsers, onSessionIconClick }) {
+  const { firstName, lastName, avatar, email, permissions, isActive, phoneNumber } = row;
 
   const name = `${firstName || ''} ${lastName || ''}`
 
@@ -35,16 +35,16 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
 
   let role = '';
 
-  if(permissions?.includes('listener')){
+  if (permissions?.includes('listener')) {
     role = 'Listener'
-  }else{
+  } else {
     role = 'Admin'
   }
 
   return (
     <>
       <TableRow hover selected={selected}>
-        <TableCell sx={{ display: 'flex', alignItems: 'center', whiteSpace:'nowrap' }}>
+        <TableCell sx={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
           <Avatar alt={name} src={avatar?.fileUrl} sx={{ mr: 2 }} />
 
           <ListItemText
@@ -60,26 +60,13 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{role}</TableCell>
 
-        <TableCell>
-          {lastLogin !== 'N/A' ? <ListItemText
-            primary={format(new Date(lastLogin), 'dd MMM yyyy')}
-            secondary={format(new Date(lastLogin), 'p')}
-            primaryTypographyProps={{ typography: 'body2', noWrap: true }}
-            secondaryTypographyProps={{
-              mt: 0.5,
-              component: 'span',
-              typography: 'caption',
-            }}
-          /> : 'N/A'}
-        </TableCell>
-        
 
         <TableCell>
           <Label
             variant="soft"
             color={
               (isActive ? 'success' : 'error')
-            }        
+            }
           >
             {isActive ? 'Active' : 'Banned'}
           </Label>
@@ -92,13 +79,19 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
             </IconButton>
           </Tooltip>
 
+          <Tooltip title="Last Login Sessions" placement="top" arrow>
+            <IconButton color="primary" onClick={onSessionIconClick}>
+              <Iconify icon="mdi:clock" />
+            </IconButton>
+          </Tooltip>
+
           {/* <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
             <Iconify icon="eva:more-vertical-fill" />
           </IconButton> */}
         </TableCell>
       </TableRow>
 
-      <UserQuickEditForm currentUser={row} open={quickEdit.value} onClose={quickEdit.onFalse} onRefreshUsers={onRefreshUsers}/>
+      <UserQuickEditForm currentUser={row} open={quickEdit.value} onClose={quickEdit.onFalse} onRefreshUsers={onRefreshUsers} />
 
       <CustomPopover
         open={popover.open}
@@ -149,5 +142,6 @@ UserTableRow.propTypes = {
   onSelectRow: PropTypes.func,
   row: PropTypes.object,
   selected: PropTypes.bool,
-  onRefreshUsers: PropTypes.func
+  onRefreshUsers: PropTypes.func,
+  onSessionIconClick: PropTypes.func
 };

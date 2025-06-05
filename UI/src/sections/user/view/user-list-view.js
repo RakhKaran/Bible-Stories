@@ -39,20 +39,21 @@ import {
 // api
 import { useGetUsersList } from 'src/api/users-api/users';
 //
+import { useAuthContext } from 'src/auth/hooks';
 import UserTableRow from '../user-table-row';
 import UserTableToolbar from '../user-table-toolbar';
 import UserTableFiltersResult from '../user-table-filters-result';
+import LastLoginDialog from '../user-last-login-dialog';
 
 // ----------------------------------------------------------------------
 
-const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, {value: true, label: 'Active'}, {value: false, label: 'Banned'}];
+const STATUS_OPTIONS = [{ value: 'all', label: 'All' }, { value: true, label: 'Active' }, { value: false, label: 'Banned' }];
 
 const TABLE_HEAD = [
   { id: 'name', label: 'Name' },
   { id: 'phoneNumber', label: 'Phone Number', width: 180 },
   { id: 'email', label: 'Email', width: 220 },
   { id: 'role', label: 'Role', width: 180 },
-  { id: 'lastLogin', label: 'Last Login'},
   { id: 'status', label: 'Status', width: 100 },
   { id: '', width: 88 },
 ];
@@ -66,6 +67,8 @@ const defaultFilters = {
 // ----------------------------------------------------------------------
 
 export default function UserListView() {
+  const { user: currentUser } = useAuthContext();
+  console.log(currentUser);
   const table = useTable();
 
   const settings = useSettingsContext();
@@ -74,17 +77,23 @@ export default function UserListView() {
 
   const confirm = useBoolean();
 
+  const lastLogin = useBoolean();
+
   const [tableData, setTableData] = useState([]);
 
   const [filters, setFilters] = useState(defaultFilters);
 
-  const {users, usersEmpty, refreshUsers} = useGetUsersList();
+  const [sessions, setSessions] = useState([]);
+
+  const { users, usersEmpty, refreshUsers } = useGetUsersList();
 
   useEffect(() => {
-    if(users && !usersEmpty){
-      setTableData(users);
+    if (users && !usersEmpty && currentUser?.id) {
+      const filteredUsers = users.filter((u) => u.id !== currentUser.id);
+      setTableData(filteredUsers);
     }
-  },[users, usersEmpty]);
+  }, [users, usersEmpty, currentUser]);
+
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -176,20 +185,21 @@ export default function UserListView() {
 
     // eslint-disable-next-line array-callback-return
     tableData.map((data) => {
-      if(data.permissions?.includes('listener')){
-      filteredTableData.push({
-      firstName : data.firstName ,
-      lastName : data.lastName ? data.lastName : '',
-      phoneNumber : data.phoneNumber,
-      email : data.email ? data.email : '',
-      city : data.city,
-      state : data.state ? data.state : '',
-      country : data.country ? data.country : '',
-      role : data.permissions?.includes('listener') ? 'Listener' : 'Admin',
-      createdAt : formatDate(data.createdAt),
-      status : data.isActive ? 'Active' : 'Banned',
-    })}
-  })
+      if (data.permissions?.includes('listener')) {
+        filteredTableData.push({
+          firstName: data.firstName,
+          lastName: data.lastName ? data.lastName : '',
+          phoneNumber: data.phoneNumber,
+          email: data.email ? data.email : '',
+          city: data.city,
+          state: data.state ? data.state : '',
+          country: data.country ? data.country : '',
+          role: data.permissions?.includes('listener') ? 'Listener' : 'Admin',
+          createdAt: formatDate(data.createdAt),
+          status: data.isActive ? 'Active' : 'Banned',
+        })
+      }
+    })
 
     const excelData = [
       columnNames.map((col) => col.label), // Add headers
@@ -265,7 +275,7 @@ export default function UserListView() {
             filters={filters}
             onFilters={handleFilters}
             //
-            roleOptions={["admin", "listener"]}
+            roleOptions={["listener"]}
             printData={() => printData()}
           />
 
@@ -334,6 +344,7 @@ export default function UserListView() {
                         onDeleteRow={() => handleDeleteRow(row.id)}
                         onEditRow={() => handleEditRow(row.id)}
                         onRefreshUsers={() => refreshUsers()}
+                        onSessionIconClick={() => { setSessions(row.lastLogins); lastLogin.onTrue() }}
                       />
                     ))}
 
@@ -383,6 +394,12 @@ export default function UserListView() {
           </Button>
         }
       />
+
+      <LastLoginDialog
+        open={lastLogin.value}
+        onClose={lastLogin.onFalse}
+        sessions={sessions}
+      />
     </>
   );
 }
@@ -415,6 +432,6 @@ function applyFilter({ inputData, comparator, filters }) {
   if (role.length) {
     inputData = inputData.filter((user) => role.some((r) => user.permissions.includes(r)));
   }
-  
+
   return inputData;
 }

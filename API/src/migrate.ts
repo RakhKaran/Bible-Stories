@@ -1,4 +1,4 @@
-import {BibleStoriesApplication} from './application';
+import { BibleStoriesApplication } from './application';
 
 export async function migrate(args: string[]) {
   const existingSchema = args.includes('--rebuild') ? 'drop' : 'alter';
@@ -21,7 +21,8 @@ export async function migrate(args: string[]) {
       'AudioHistory',
       'GuestUsers',
       'PushNotifications',
-      'UserAnalytics'
+      'UserAnalytics',
+      'LastLogin'
     ],
   });
 

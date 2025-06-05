@@ -1,5 +1,6 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {Entity, model, property, belongsTo, hasMany} from '@loopback/repository';
 import {Language} from './language.model';
+import {LastLogin} from './last-login.model';
 
 @model()
 export class Users extends Entity {
@@ -131,6 +132,9 @@ export class Users extends Entity {
     type: 'date',
   })
   updatedAt?: Date;
+
+  @hasMany(() => LastLogin)
+  lastLogins: LastLogin[];
 
   constructor(data?: Partial<Users>) {
     super(data);

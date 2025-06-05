@@ -13,3 +13,4 @@ export * from './analytics.controller';
 export * from './audiohistory.controller';
 export * from './guest-user.controller';
 export * from './push-notification.controller';
+export * from './users-last-login.controller';

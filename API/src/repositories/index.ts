@@ -11,3 +11,4 @@ export * from './audio-history.repository';
 export * from './guest-users.repository';
 export * from './push-notifications.repository';
 export * from './user-analytics.repository';
+export * from './last-login.repository';

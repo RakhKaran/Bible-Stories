@@ -1,7 +1,7 @@
 import { DefaultTransactionalRepository, IsolationLevel, repository } from '@loopback/repository';
-import { CommentsRepository, DownloadStoriesRepository, LikedStoriesRepository, UsersRepository } from '../repositories';
+import { CommentsRepository, DownloadStoriesRepository, LastLoginRepository, LikedStoriesRepository, UsersRepository } from '../repositories';
 import { del, get, getJsonSchemaRef, getModelSchemaRef, HttpErrors, param, patch, post, requestBody } from '@loopback/rest';
-import {  Users } from '../models';
+import { Users } from '../models';
 import { BibleStoriesDataSource } from '../datasources';
 import { inject } from '@loopback/core';
 import { validateCredentialsForPhoneLogin } from '../services/validator';
@@ -45,6 +45,8 @@ export class UsersController {
     public downloadStoriesRepository: DownloadStoriesRepository,
     @repository(CommentsRepository)
     public commentsRepository: CommentsRepository,
+    @repository(LastLoginRepository)
+    public lastLoginRepo: LastLoginRepository,
   ) {
     this.passwordHasher = new BcryptHasher();
   }
@@ -195,18 +197,18 @@ export class UsersController {
   ): Promise<any> {
     try {
       const { email, password } = requestBody;
-  
+
       // Find user by email
       const user = await this.usersRepository.findOne({ where: { email } });
       if (!user) {
         throw new HttpErrors.BadRequest('Email does not exist');
       }
-  
+
       // Check if the user is active
       if (!user.isActive) {
         throw new HttpErrors.BadRequest('User is not active');
       }
-  
+
       // Compare password
       const passwordMatch = await this.passwordHasher.comparePassword(password, user.password);
       if (passwordMatch) {
@@ -214,6 +216,9 @@ export class UsersController {
         const userProfile = this.userService.convertToUserProfile(user);
         const userData = _.omit(userProfile, 'password'); // Omit the password field
         const token = await this.jwtService.generateToken(userProfile);
+        await this.lastLoginRepo.create({
+          usersId: user.id,
+        });
         return {
           success: true,
           accessToken: token,
@@ -237,43 +242,43 @@ export class UsersController {
 
   // update admin password
   @authenticate({
-    strategy : 'jwt',
-    options: {required: [PermissionKeys.ADMIN]}
+    strategy: 'jwt',
+    options: { required: [PermissionKeys.ADMIN] }
   })
   @patch('/update-password')
   async updatePassword(
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            properties : {
-              userId : {
-                type : 'number',
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              userId: {
+                type: 'number',
               },
-              oldPassword : {
-                type : 'string',
-                description : 'Old Password is required' 
+              oldPassword: {
+                type: 'string',
+                description: 'Old Password is required'
               },
-              newPassword : {
-                type : 'string',
-                description : 'New password to change'
+              newPassword: {
+                type: 'string',
+                description: 'New password to change'
               }
             }
           }
         }
       }
     })
-    requestBody : {
-      userId : number;
-      oldPassword : string;
-      newPassword : string;
+    requestBody: {
+      userId: number;
+      oldPassword: string;
+      newPassword: string;
     }
-  ) : Promise<object>{
-    try{
+  ): Promise<object> {
+    try {
       const { userId, oldPassword, newPassword } = requestBody;
       const user = await this.usersRepository.findById(userId);
 
-      if(!user){
+      if (!user) {
         throw new HttpErrors.BadRequest('User for given id not found');
       }
 
@@ -281,23 +286,23 @@ export class UsersController {
 
       const isOldPasswordValid = await this.passwordHasher.comparePassword(oldPassword, password);
 
-      if(isOldPasswordValid){
+      if (isOldPasswordValid) {
         const newHashedPassword = await this.passwordHasher.hashPassword(newPassword);
 
-        await this.usersRepository.updateById(user.id, {password : newHashedPassword});
+        await this.usersRepository.updateById(user.id, { password: newHashedPassword });
 
-        return{
-          success : true,
-          message : 'Password Updated',
+        return {
+          success: true,
+          message: 'Password Updated',
         }
-      }else{
-        return{
-          success : false,
-          message : 'Password not matched'
+      } else {
+        return {
+          success: false,
+          message: 'Password not matched'
         }
       }
 
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -306,32 +311,32 @@ export class UsersController {
   @post('/forget-password')
   async forgetPassword(
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            properties : {
-              email : {
-                type : 'string',
-                description : 'email to reset password for user'
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              email: {
+                type: 'string',
+                description: 'email to reset password for user'
               }
             }
           }
         }
       }
     })
-    requestBody : {
-      email : string;
+    requestBody: {
+      email: string;
     }
-  ) : Promise<object>{
-    try{
+  ): Promise<object> {
+    try {
       const { email } = requestBody;
       const user = await this.usersRepository.findOne({
-        where : {
-          email : email
+        where: {
+          email: email
         }
       });
 
-      if(!user){
+      if (!user) {
         throw new HttpErrors.BadRequest("User don't exist");
       }
 
@@ -345,10 +350,10 @@ export class UsersController {
 
       const template = AdminForgotPasswordEmailTemplate(data);
 
-      await this.usersRepository.updateById(user.id, 
+      await this.usersRepository.updateById(user.id,
         {
-          otp : data.otp, 
-          otpExpireAt : new Date(Date.now() + 10 * 60 * 1000).toISOString()
+          otp: data.otp,
+          otpExpireAt: new Date(Date.now() + 10 * 60 * 1000).toISOString()
         }
       );
 
@@ -371,11 +376,11 @@ export class UsersController {
           throw new HttpErrors.UnprocessableEntity(err);
         });
 
-      return{
-        success : true,
-        message : "Otp send successfully"
+      return {
+        success: true,
+        message: "Otp send successfully"
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -384,62 +389,62 @@ export class UsersController {
   @post('/reset-password')
   async resetPassword(
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            properties : {
-              email : {
-                type : 'string',
-                description : 'email to identify user'
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              email: {
+                type: 'string',
+                description: 'email to identify user'
               },
-              otp : {
-                type : 'string',
-                description : 'to verify user'
+              otp: {
+                type: 'string',
+                description: 'to verify user'
               }
             }
           }
         }
       }
-    }) 
-    requestBody : {
-      email : string;
-      otp : string;
+    })
+    requestBody: {
+      email: string;
+      otp: string;
     }
-  ) : Promise<Object> {
-    try{
+  ): Promise<Object> {
+    try {
       const { email, otp } = requestBody;
 
       const userData = await this.usersRepository.findOne({
-        where : {
-          email : email
+        where: {
+          email: email
         }
       });
 
-      if(!userData){
+      if (!userData) {
         throw new HttpErrors.BadRequest("User not found");
       }
 
       const currentTime = new Date();
 
-      if(currentTime <= new Date(userData.otpExpireAt)){
-        if(userData.otp === otp){
-          return{
-            success : 'true',
-            message : 'User is authenticated'
+      if (currentTime <= new Date(userData.otpExpireAt)) {
+        if (userData.otp === otp) {
+          return {
+            success: 'true',
+            message: 'User is authenticated'
           }
-        }else{
-          return{
-            success : 'false',
-            message : 'Invalid otp'
+        } else {
+          return {
+            success: 'false',
+            message: 'Invalid otp'
           }
         }
-      }else{
-        return{
-          success : false,
-          message : 'otp expired'
+      } else {
+        return {
+          success: false,
+          message: 'otp expired'
         }
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -448,50 +453,50 @@ export class UsersController {
   @patch('/update-new-password')
   async updateNewPassword(
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            properties : {
-              email : {
-                type : 'string',
-                description : 'email of user'
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              email: {
+                type: 'string',
+                description: 'email of user'
               },
-              password : {
-                type : 'string',
-                description : 'new password'
+              password: {
+                type: 'string',
+                description: 'new password'
               }
             }
           }
         }
       }
     })
-    requestBody : {
-      email : string;
-      password : string;
+    requestBody: {
+      email: string;
+      password: string;
     }
-  ) : Promise<object>{
-    try{
+  ): Promise<object> {
+    try {
       const { email, password } = requestBody;
 
       const userData = await this.usersRepository.findOne({
-        where : {
-          email : email
+        where: {
+          email: email
         }
       });
 
-      if(!userData){
+      if (!userData) {
         throw new HttpErrors.BadRequest('User not found');
       }
 
       const hashedPassword = await this.passwordHasher.hashPassword(password);
 
-      await this.usersRepository.updateById(userData.id,{password : hashedPassword, otp : undefined, otpExpireAt : undefined});
+      await this.usersRepository.updateById(userData.id, { password: hashedPassword, otp: undefined, otpExpireAt: undefined });
 
-      return{
-        success : true,
-        message : 'Password Updated'
+      return {
+        success: true,
+        message: 'Password Updated'
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -520,18 +525,18 @@ export class UsersController {
   ): Promise<any> {
     try {
       const { phoneNumber, password } = requestBody;
-  
+
       // Find user by email
       const user = await this.usersRepository.findOne({ where: { phoneNumber } });
       if (!user) {
         throw new HttpErrors.BadRequest('Phone number does not exist');
       }
-  
+
       // Check if the user is active
       if (!user.isActive) {
         throw new HttpErrors.BadRequest('User is not active');
       }
-  
+
       // Compare password
       const passwordMatch = await this.passwordHasher.comparePassword(password, user.password);
       if (passwordMatch) {
@@ -582,17 +587,17 @@ export class UsersController {
         },
       },
     })
-    body: { token : string },
+    body: { token: string },
   ) {
     const { token } = body;
 
     const firebaseResponse = await this.firebaseAdmin.verifyCustomer(token);
 
-    if(!firebaseResponse){
+    if (!firebaseResponse) {
       throw new HttpErrors.BadRequest('Invalid token id');
     }
     // Step 2: Find the user in the database
-    const user = await this.usersRepository.findOne({ where: { phoneNumber : firebaseResponse.phoneNumber } });
+    const user = await this.usersRepository.findOne({ where: { phoneNumber: firebaseResponse.phoneNumber } });
 
     if (!user) {
       throw new HttpErrors.NotFound('User not found');
@@ -615,50 +620,50 @@ export class UsersController {
   @patch('/customer/update-new-password')
   async customerUpdateNewPassword(
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            properties : {
-              phoneNumber : {
-                type : 'string',
-                description : 'phone number of user'
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              phoneNumber: {
+                type: 'string',
+                description: 'phone number of user'
               },
-              password : {
-                type : 'string',
-                description : 'new password'
+              password: {
+                type: 'string',
+                description: 'new password'
               }
             }
           }
         }
       }
     })
-    requestBody : {
-      phoneNumber : string;
-      password : string;
+    requestBody: {
+      phoneNumber: string;
+      password: string;
     }
-  ) : Promise<object>{
-    try{
+  ): Promise<object> {
+    try {
       const { phoneNumber, password } = requestBody;
 
       const userData = await this.usersRepository.findOne({
-        where : {
-          phoneNumber : phoneNumber
+        where: {
+          phoneNumber: phoneNumber
         }
       });
 
-      if(!userData){
+      if (!userData) {
         throw new HttpErrors.BadRequest('User not found');
       }
 
       const hashedPassword = await this.passwordHasher.hashPassword(password);
 
-      await this.usersRepository.updateById(userData.id,{password : hashedPassword, otp : undefined, otpExpireAt : undefined});
+      await this.usersRepository.updateById(userData.id, { password: hashedPassword, otp: undefined, otpExpireAt: undefined });
 
-      return{
-        success : true,
-        message : 'Password Updated'
+      return {
+        success: true,
+        message: 'Password Updated'
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -668,9 +673,9 @@ export class UsersController {
   // update user profile
   @patch('/update-profile/{userId}')
   async updateProfile(
-    @param.path.number('userId') userId : number,
+    @param.path.number('userId') userId: number,
     @requestBody({
-      content : {
+      content: {
         'application/json': {
           schema: getModelSchemaRef(Users, {
             exclude: ['id'],
@@ -678,22 +683,22 @@ export class UsersController {
         },
       }
     })
-    userData : Omit<Users, 'id'>
-  ) : Promise<object>{
-    try{
+    userData: Omit<Users, 'id'>
+  ): Promise<object> {
+    try {
       const user = await this.usersRepository.findById(userId);
 
-      if(!user){
+      if (!user) {
         throw new HttpErrors.BadRequest(`User with id ${userId} dont exist`);
       }
 
       await this.usersRepository.updateById(user.id, userData);
 
-      return{
-        success : true,
-        message : 'User Updated'
+      return {
+        success: true,
+        message: 'User Updated'
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -701,56 +706,56 @@ export class UsersController {
   // update-user-profile
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN]},
-  }) 
+    options: { required: [PermissionKeys.ADMIN] },
+  })
   @patch('/update-user-profile')
   async updateUserProfile(
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            properties : {
-              firstName : {
-                type : 'string',
-                description : 'Users first name'
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              firstName: {
+                type: 'string',
+                description: 'Users first name'
               },
-              avatar : {
-                type : 'object',
-                description : 'Users profile Image'
+              avatar: {
+                type: 'object',
+                description: 'Users profile Image'
               }
             }
           }
         }
       }
     })
-    requestBody : {
-      firstName : string;
-      avatar : {
-        fileUrl : string;
+    requestBody: {
+      firstName: string;
+      avatar: {
+        fileUrl: string;
       }
     },
-    @inject(AuthenticationBindings.CURRENT_USER) currentUser : CurrentUser,
-  ) : Promise<{success : boolean, message : string}>{
-    try{
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: CurrentUser,
+  ): Promise<{ success: boolean, message: string }> {
+    try {
       const { firstName, avatar } = requestBody;
 
       let updateData: any = {};
 
-      if(firstName){
+      if (firstName) {
         updateData.firstName = firstName;
       }
 
-      if(avatar){
+      if (avatar) {
         updateData.avatar = avatar;
       }
 
       await this.usersRepository.updateById(Number(currentUser.id), updateData);
 
-      return{
-        success : true,
-        message : 'Profile updated'
+      return {
+        success: true,
+        message: 'Profile updated'
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -758,29 +763,29 @@ export class UsersController {
   // get user by id
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN]},
-  }) 
+    options: { required: [PermissionKeys.ADMIN] },
+  })
   @get('/users/{userId}')
   async fetchUserById(
-    @param.path.number('userId') userId : number,
-  ) : Promise<Object>{
-    try{
+    @param.path.number('userId') userId: number,
+  ): Promise<Object> {
+    try {
       const user = await this.usersRepository.findById(userId);
 
-      if(!user){
+      if (!user) {
         throw new HttpErrors.BadRequest(`User with id ${userId} dont exist`);
       }
 
-      if(user && !user.isActive){
+      if (user && !user.isActive) {
         throw new HttpErrors.BadRequest('User is not active');
       }
 
-      return{
-        success : true,
-        message : "User Data",
-        data : user
+      return {
+        success: true,
+        message: "User Data",
+        data: user
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -793,34 +798,18 @@ export class UsersController {
   @get('/users')
   async fetchUsers(): Promise<object> {
     try {
-      const users = await this.usersRepository.find();
-  
+      const users = await this.usersRepository.find({ include: ['lastLogins'] });
+
       if (users.length <= 0) {
         return {
           success: false,
           message: 'No users data found'
         };
       }
-  
-      const usersWithLastLogin = await Promise.all(users.map(async (user) => {
-        if (user.id !== undefined) {
-          const lastLogin = await this.userAnalyticsService.getUserLastLogin(user.id);
-          return {
-            ...user,
-            lastLogin: lastLogin.loginDate || 'N/A'
-          };
-        } else {
-          return {
-            ...user,
-            lastLogin: 'N/A'
-          };
-        }
-      }));      
-  
       return {
         success: true,
         message: 'Users Data',
-        data: usersWithLastLogin
+        data: users
       };
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -830,26 +819,26 @@ export class UsersController {
       };
     }
   }
-  
+
   // setting app language
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+    options: { required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER] },
   })
   @post('/users/set-lang')
   async setAppLanguage(
     @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            type : 'object',
-            properties : {
-              appLanguage : {
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              appLanguage: {
                 type: 'string',
                 description: 'app language for app'
               },
-              audioLanguage : {
+              audioLanguage: {
                 type: 'number',
                 description: 'Users Preffered audio language'
               }
@@ -857,30 +846,30 @@ export class UsersController {
           }
         }
       }
-     })
-     requestBody : {
-      appLanguage : string;
-      audioLanguage : number;
-     }
-  ) : Promise<{ success : boolean, message : string }>{
-    try{
-      const { appLanguage, audioLanguage } = requestBody; 
+    })
+    requestBody: {
+      appLanguage: string;
+      audioLanguage: number;
+    }
+  ): Promise<{ success: boolean, message: string }> {
+    try {
+      const { appLanguage, audioLanguage } = requestBody;
       const userData = await this.usersRepository.findById(currentUser.id);
 
-      if(!userData){
+      if (!userData) {
         throw new HttpErrors.BadRequest('User not found');
       }
 
       await this.usersRepository.updateById(currentUser.id, {
-        appLanguage : appLanguage ? appLanguage : userData.appLanguage,
-        audioLanguage : audioLanguage ? audioLanguage : userData.audioLanguage
+        appLanguage: appLanguage ? appLanguage : userData.appLanguage,
+        audioLanguage: audioLanguage ? audioLanguage : userData.audioLanguage
       });
 
-      return{
-        success : true,
-        message : 'Language set successfully',
+      return {
+        success: true,
+        message: 'Language set successfully',
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -888,18 +877,18 @@ export class UsersController {
   // push notification toggle api
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+    options: { required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER] },
   })
   @post('/users/set-push-notification')
   async setPushNotifications(
     @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            type : 'object',
-            properties : {
-              pushNotification : {
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              pushNotification: {
                 type: 'boolean',
                 description: 'push notification for app'
               },
@@ -907,28 +896,28 @@ export class UsersController {
           }
         }
       }
-     })
-     requestBody : {
-      pushNotification : boolean;
-     }
-  ) : Promise<{success : boolean, message : string}>{
-    try{
-      const { pushNotification } = requestBody; 
+    })
+    requestBody: {
+      pushNotification: boolean;
+    }
+  ): Promise<{ success: boolean, message: string }> {
+    try {
+      const { pushNotification } = requestBody;
       const userData = await this.usersRepository.findById(currentUser.id);
 
-      if(!userData){
+      if (!userData) {
         throw new HttpErrors.BadRequest('User not found');
       }
 
       await this.usersRepository.updateById(currentUser.id, {
-        isAllowingPushNotifications : (pushNotification !== null || pushNotification !== undefined) ? pushNotification : userData.isAllowingPushNotifications,
+        isAllowingPushNotifications: (pushNotification !== null || pushNotification !== undefined) ? pushNotification : userData.isAllowingPushNotifications,
       });
 
-      return{
-        success : true,
-        message : 'Push Notification set successfully',
+      return {
+        success: true,
+        message: 'Push Notification set successfully',
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -936,18 +925,18 @@ export class UsersController {
   // Autoplay toggle api
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+    options: { required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER] },
   })
   @post('/users/set-autoplay')
   async setAutoplay(
     @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            type : 'object',
-            properties : {
-              autoplay : {
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              autoplay: {
                 type: 'boolean',
                 description: 'autoplay for app'
               },
@@ -955,28 +944,28 @@ export class UsersController {
           }
         }
       }
-     })
-     requestBody : {
-      autoplay : boolean;
-     }
-  ) : Promise<{success : boolean, message : string}>{
-    try{
-      const { autoplay } = requestBody; 
+    })
+    requestBody: {
+      autoplay: boolean;
+    }
+  ): Promise<{ success: boolean, message: string }> {
+    try {
+      const { autoplay } = requestBody;
       const userData = await this.usersRepository.findById(currentUser.id);
 
-      if(!userData){
+      if (!userData) {
         throw new HttpErrors.BadRequest('User not found');
       }
 
       await this.usersRepository.updateById(currentUser.id, {
-        isAllowingAutoplay : (autoplay !== null || autoplay !== undefined) ? autoplay : userData.isAllowingAutoplay,
+        isAllowingAutoplay: (autoplay !== null || autoplay !== undefined) ? autoplay : userData.isAllowingAutoplay,
       });
 
-      return{
-        success : true,
-        message : 'Autoplay set successfully',
+      return {
+        success: true,
+        message: 'Autoplay set successfully',
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -984,46 +973,46 @@ export class UsersController {
   // Setting FCMToken...
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]},
+    options: { required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER] },
   })
   @post('/users/set-fcmToken')
   async setUsersFcmToken(
-    @inject(AuthenticationBindings.CURRENT_USER) currentUser : UserProfile,
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
     @requestBody({
-      content : {
-        'application/json' : {
-          schema : {
-            type : 'object',
-            properties : {
-              fcmToken : {
-                type : 'string',
-                description : 'FCM Token For sending notifications'
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              fcmToken: {
+                type: 'string',
+                description: 'FCM Token For sending notifications'
               }
             }
           }
         }
       }
     })
-    requestBody : {
-      fcmToken : string;
+    requestBody: {
+      fcmToken: string;
     }
-  ) : Promise<{success : boolean, message : string}>{
-    try{
+  ): Promise<{ success: boolean, message: string }> {
+    try {
       const { fcmToken } = requestBody;
 
       const user = await this.usersRepository.findById(currentUser.id);
 
-      if(!user){
+      if (!user) {
         throw new HttpErrors.BadRequest('User not found');
       }
 
-      await this.usersRepository.updateById(user.id, {fcmToken : fcmToken});
+      await this.usersRepository.updateById(user.id, { fcmToken: fcmToken });
 
-      return{
-        success : true,
-        message : "FCM token set successfully"
+      return {
+        success: true,
+        message: "FCM token set successfully"
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -1040,18 +1029,18 @@ export class UsersController {
     try {
       // Find the user
       const user = await this.usersRepository.findById(currentUser.id);
-  
+
       if (!user) {
         throw new HttpErrors.BadRequest('User does not exist');
       }
-  
+
       if (user.isUserDeleted) {
         throw new HttpErrors.BadRequest('User is already deleted');
       }
-  
+
       // Mark user as deleted
-      await this.usersRepository.updateById(user.id, 
-        { 
+      await this.usersRepository.updateById(user.id,
+        {
           isUserDeleted: true,
           lastName: undefined,
           appLanguage: undefined,
@@ -1060,45 +1049,83 @@ export class UsersController {
           isAllowingPushNotifications: false,
         }
       );
-  
+
       // Delete related liked stories
       await this.likedStoriesRepository.deleteAll({ usersId: user.id });
-  
+
       // Delete related downloaded stories
       await this.downloadStoriesRepository.deleteAll({ usersId: user.id });
-  
+
       // Find and delete all comments and their replies recursively
       const deleteCommentsRecursive = async (commentIds: number[]): Promise<void> => {
         for (const commentId of commentIds) {
           // Find replies to the current comment
-          const replies : any = await this.commentsRepository.find({
+          const replies: any = await this.commentsRepository.find({
             where: { repliedCommentId: commentId },
           });
-  
+
           if (replies.length > 0) {
             // Recursively delete replies
-            await deleteCommentsRecursive(replies.map((reply : any) => reply.id));
+            await deleteCommentsRecursive(replies.map((reply: any) => reply.id));
           }
-  
+
           // Delete the current comment
           await this.commentsRepository.deleteById(commentId);
         }
       };
-  
+
       // Start by deleting all root comments of the user
       const userComments = await this.commentsRepository.find({ where: { usersId: user.id } });
-      const userCommentIds : any = userComments.length > 0 ? userComments.map((comment) => comment.id) : [];
-  
-      if(userCommentIds.length > 0){
+      const userCommentIds: any = userComments.length > 0 ? userComments.map((comment) => comment.id) : [];
+
+      if (userCommentIds.length > 0) {
         await deleteCommentsRecursive(userCommentIds);
       }
-  
+
       // Optionally, delete user's own comments as well
       await this.commentsRepository.deleteAll({ usersId: user.id });
-  
+
       return { success: true, message: 'User deleted successfully' };
     } catch (error) {
       throw error;
     }
-  }  
+  }
+
+
+  @authenticate({
+    strategy: 'jwt',
+  })
+  @post('/users/user-session')
+  async storeSession(
+    @inject(AuthenticationBindings.CURRENT_USER)
+    currentUser: UserProfile,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              ipAddress: { type: 'string' },
+              deviceInfo: { type: 'string' },
+            },
+          },
+        },
+      },
+    })
+    sessionData: { ipAddress?: string; deviceInfo?: string },
+  ): Promise<any> {
+    const userId = currentUser.id;
+
+    const lastLoginDetails = await this.lastLoginRepo.create({
+      usersId: userId,
+      ip_address: sessionData?.ipAddress ?? undefined,
+      device_info: sessionData?.deviceInfo ?? undefined,
+    });
+
+    return {
+      success: true,
+      message: 'Session stored successfully',
+      data: lastLoginDetails,
+    };
+  }
 }
