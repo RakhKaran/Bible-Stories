@@ -24,7 +24,7 @@ export default function LastLoginDialog({ open, onClose, sessions }) {
                     <Typography>No login sessions found.</Typography>
                 ) : (
                     <List>
-                        {sessions.map((session, index) => (
+                        {sessions && sessions.length > 0 ? sessions.map((session, index) => (
                             <React.Fragment key={index}>
                                 <ListItem alignItems="flex-start">
                                     <ListItemText
@@ -44,8 +44,9 @@ export default function LastLoginDialog({ open, onClose, sessions }) {
                                 </ListItem>
                                 {index < sessions.length - 1 && <Divider />}
                             </React.Fragment>
-                        ))}
-
+                        )) : (
+                            <Typography variant='h6'>No Sessions found</Typography>
+                        )}
                     </List>
                 )}
             </DialogContent>
