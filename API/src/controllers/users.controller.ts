@@ -118,6 +118,8 @@ export class UsersController {
             ...existingUser, // Retain existing properties
             ...userData, // Override with new data
             isUserDeleted: false, // Mark as active
+            isAllowingAutoplay: true,
+            isAllowingPushNotifications: true
           };
 
           // Hash the password if provided
@@ -154,7 +156,11 @@ export class UsersController {
 
       // Create a new user
       const userInfo = { ...userData, password: hashedPassword };
-      const savedUser = await this.usersRepository.create(userInfo, {
+      const savedUser = await this.usersRepository.create({
+        ...userInfo,
+        isAllowingAutoplay: true,
+        isAllowingPushNotifications: true
+      }, {
         transaction: tx,
       });
 
