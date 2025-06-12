@@ -16,34 +16,34 @@ interface AnalyticsData {
 
 export class AnalyticsController {
   constructor(
-      @inject('datasources.bibleStories')
-      public dataSource: BibleStoriesDataSource,
-      @repository(UsersRepository)
-      public usersRepository: UsersRepository,
-      @repository(StoriesRepository)
-      public storiesRepository: StoriesRepository,
-      @repository(LanguageRepository)
-      public languageRepository: LanguageRepository,
-      @repository(GuestUsersRepository)
-      public guestUsersRepository: GuestUsersRepository,
-      @repository(AudioHistoryRepository)
-      public audioHistoryRepository: AudioHistoryRepository,
-      @repository(LikedStoriesRepository)
-      public likedStorieRepository: LikedStoriesRepository,
-      @repository(DownloadStoriesRepository)
-      public downloadStoriesRepository: DownloadStoriesRepository,
-      @repository(UserAnalyticsRepository)
-      public userAnalyticsRepository: UserAnalyticsRepository,
-  ) {}
+    @inject('datasources.bibleStories')
+    public dataSource: BibleStoriesDataSource,
+    @repository(UsersRepository)
+    public usersRepository: UsersRepository,
+    @repository(StoriesRepository)
+    public storiesRepository: StoriesRepository,
+    @repository(LanguageRepository)
+    public languageRepository: LanguageRepository,
+    @repository(GuestUsersRepository)
+    public guestUsersRepository: GuestUsersRepository,
+    @repository(AudioHistoryRepository)
+    public audioHistoryRepository: AudioHistoryRepository,
+    @repository(LikedStoriesRepository)
+    public likedStorieRepository: LikedStoriesRepository,
+    @repository(DownloadStoriesRepository)
+    public downloadStoriesRepository: DownloadStoriesRepository,
+    @repository(UserAnalyticsRepository)
+    public userAnalyticsRepository: UserAnalyticsRepository,
+  ) { }
 
   // analytics blocks...
   @authenticate({
-    strategy : 'jwt',
-    options : [PermissionKeys.ADMIN]
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN]
   })
   @get('/analytics-blocks')
-  async analyticsBlocks() : Promise<{success : boolean, message : string, data : object}>{
-    try{
+  async analyticsBlocks(): Promise<{ success: boolean, message: string, data: object }> {
+    try {
       const filter: any = {
         where: { or: [{ permissions: { like: `%["admin"]%` } }, { permissions: { like: `%["listener"]%` } }] }
       }
@@ -58,17 +58,17 @@ export class AnalyticsController {
 
       const guestUsersCount = await this.guestUsersRepository.count();
 
-      return{
-        success : true,
-        message : 'Analytics block data',
-        data : {
-          usersCount : usersCount,
-          storiesCount : storiesCount.count,
-          languageCount : languageCount.count,
-          guestUsersCount : guestUsersCount.count
+      return {
+        success: true,
+        message: 'Analytics block data',
+        data: {
+          usersCount: usersCount,
+          storiesCount: storiesCount.count,
+          languageCount: languageCount.count,
+          guestUsersCount: guestUsersCount.count
         }
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -85,7 +85,7 @@ export class AnalyticsController {
     try {
       // Construct query based on the timePeriod
       let timeColumn = 'ah.cumulativeListeningDuration'; // Default to 'all'
-      
+
       // Adjust the column based on the time period requested
       if (timePeriod === 'daily') {
         timeColumn = 'ah.dailyCumulativeListeningDuration';
@@ -96,7 +96,7 @@ export class AnalyticsController {
       } else if (timePeriod !== 'all') {
         throw new HttpErrors.BadRequest('Invalid time period. Use "daily", "weekly", "monthly", or "all".');
       }
-  
+
       // Query the database to get top listeners by the selected time period
       const topListeners = await this.audioHistoryRepository.dataSource.execute(
         `
@@ -120,7 +120,7 @@ export class AnalyticsController {
         LIMIT 10;
         `,
       );
-  
+
       return {
         success: true,
         message: 'Top listeners retrieved successfully',
@@ -131,7 +131,7 @@ export class AnalyticsController {
       throw new Error('Failed to retrieve top listeners');
     }
   }
-  
+
   // Most liked stories...
   @authenticate({
     strategy: 'jwt',
@@ -155,7 +155,7 @@ export class AnalyticsController {
       // Group liked stories by their storyId to calculate the like count
       const storyMap: Map<number, { likeCount: number; story: object }> = new Map();
 
-      likedStories.forEach((likedStory : any) => {
+      likedStories.forEach((likedStory: any) => {
         const storyId = likedStory.storiesId;
 
         // Initialize the entry for the storyId if not already present
@@ -214,7 +214,7 @@ export class AnalyticsController {
       // Group download stories by their storyId to calculate the download count
       const storyMap: Map<number, { downloadCount: number; story: object }> = new Map();
 
-      downloadedStories.forEach((downloadedStory : any) => {
+      downloadedStories.forEach((downloadedStory: any) => {
         const storyId = downloadedStory.storiesId;
 
         // Initialize the entry for the storyId if not already present
@@ -262,32 +262,32 @@ export class AnalyticsController {
     try {
       // Fetching story data
       const story = await this.storiesRepository.findOne({
-        where : {
-          id : storyId,
+        where: {
+          id: storyId,
         },
-        include : [
-          {relation : 'category'}
+        include: [
+          { relation: 'category' }
         ]
       });
-  
+
       if (!story) {
         throw new HttpErrors.NotFound('Story Not Found');
       }
-  
+
       // Fetching audio history data for the particular story
       const filterAudioHistory = await this.audioHistoryRepository.find({
         where: {
           storiesId: story.id,
         },
       });
-  
+
       if (filterAudioHistory.length === 0) {
         const cumulativeListeningDuration = 0;
         const usersCount = filterAudioHistory.length;
-  
+
         // Initializing an array to track language-wise duration and users count
         let languageWiseDuration: any = [];
-  
+
         // Populating the language-wise duration array with each audio's language
         story.audios.forEach((audio) => {
           if (audio.language) {
@@ -298,15 +298,15 @@ export class AnalyticsController {
             });
           }
         });
-  
+
         // liked count for this story...
         const likedStories = await this.likedStorieRepository.find({ where: { storiesId: story.id } });
         const likesCount = likedStories.length;
-  
+
         // downloads count for this story...
         const downloadStories = await this.downloadStoriesRepository.find({ where: { storiesId: story.id } });
         const downloadCount = downloadStories.length;
-  
+
         const data = {
           storyData: story,
           languageWiseData: languageWiseDuration,
@@ -315,27 +315,27 @@ export class AnalyticsController {
           likes: likesCount,
           downloadCount: downloadCount,
         };
-  
+
         return {
           success: true,
           message: 'Analytics of story',
           data: data,
         };
       }
-  
+
       let cumulativeListeningDuration = 0;
       const usersCount = filterAudioHistory.length;
-  
+
       // for overall duration and users count
       for (const audio of filterAudioHistory) {
         if (audio.cumulativeListeningDuration) {
           cumulativeListeningDuration += audio.cumulativeListeningDuration;
         }
       }
-  
+
       // Initializing an array to track language-wise duration and users count
       let languageWiseDuration: any = [];
-  
+
       // Populating the language-wise duration array with each audio's language
       story.audios.forEach((audio) => {
         if (audio.language) {
@@ -346,31 +346,31 @@ export class AnalyticsController {
           });
         }
       });
-  
+
       // Accumulating the listening duration for each language
       for (const audioHistory of filterAudioHistory) {
         const audioLanguage = audioHistory.language; // Assuming language is stored in the history
         const language = languageWiseDuration.find(
           (lang: any) => lang.id === audioLanguage
         );
-  
+
         if (language) {
           // Update cumulative listening duration for the language
           language.cumulativeListeningDuration += audioHistory.cumulativeListeningDuration;
-  
+
           // Increment the users count for the language
           language.usersCount += 1;
         }
       }
-  
+
       // liked count for this story...
       const likedStories = await this.likedStorieRepository.find({ where: { storiesId: story.id } });
       const likesCount = likedStories.length;
-  
+
       // downloads count for this story...
       const downloadStories = await this.downloadStoriesRepository.find({ where: { storiesId: story.id } });
       const downloadCount = downloadStories.length;
-  
+
       const data = {
         storyData: story,
         languageWiseData: languageWiseDuration,
@@ -379,7 +379,7 @@ export class AnalyticsController {
         likes: likesCount,
         downloadCount: downloadCount,
       };
-  
+
       return {
         success: true,
         message: 'Analytics of story',
@@ -388,7 +388,7 @@ export class AnalyticsController {
     } catch (error) {
       throw error;
     }
-  }    
+  }
 
   // Top stories...
   @authenticate({
@@ -402,7 +402,7 @@ export class AnalyticsController {
     try {
       // Construct query based on the timePeriod
       let timeColumn = 'ah.cumulativeListeningDuration'; // Default to 'all'
-      
+
       // Adjust the column based on the time period requested
       if (timePeriod === 'daily') {
         timeColumn = 'ah.dailyCumulativeListeningDuration';
@@ -413,7 +413,7 @@ export class AnalyticsController {
       } else if (timePeriod !== 'all') {
         throw new HttpErrors.BadRequest('Invalid time period. Use "daily", "weekly", "monthly", or "all".');
       }
-  
+
       // Query the database to get top stories by the selected time period
       const topStories = await this.audioHistoryRepository.dataSource.execute(
         `
@@ -436,7 +436,7 @@ export class AnalyticsController {
         LIMIT 10;
         `,
       );
-  
+
       return {
         success: true,
         message: 'Top stories retrieved successfully',
@@ -460,7 +460,7 @@ export class AnalyticsController {
     try {
       // Construct query based on the timePeriod
       let timeColumn = 'ah.cumulativeListeningDuration'; // Default to 'all'
-      
+
       // Adjust the column based on the time period requested
       if (timePeriod === 'daily') {
         timeColumn = 'ah.dailyCumulativeListeningDuration';
@@ -471,7 +471,7 @@ export class AnalyticsController {
       } else if (timePeriod !== 'all') {
         throw new HttpErrors.BadRequest('Invalid time period. Use "daily", "weekly", "monthly", or "all".');
       }
-  
+
       // Query the database to get top languages by the selected time period
       const topLanguages = await this.audioHistoryRepository.dataSource.execute(
         `
@@ -494,7 +494,7 @@ export class AnalyticsController {
         LIMIT 10;
         `,
       );
-  
+
       return {
         success: true,
         message: 'Top languages retrieved successfully',
@@ -504,7 +504,7 @@ export class AnalyticsController {
       console.error('Error retrieving top languages:', error);
       throw new HttpErrors.InternalServerError('Failed to retrieve top languages');
     }
-  }  
+  }
 
   // users based analytics...
   @authenticate({
@@ -516,10 +516,10 @@ export class AnalyticsController {
     try {
       // Fetch all user analytics data
       const userAnalyticsData = await this.userAnalyticsRepository.find();
-      
+
       // Fetch all users to filter new users by registration date
       const users = await this.usersRepository.find();
-  
+
       // Group analytics data by year and month
       const groupedAnalytics: { [key: string]: AnalyticsData } = userAnalyticsData.reduce((acc, analytics) => {
         analytics.analytics.forEach((data) => {
@@ -534,7 +534,7 @@ export class AnalyticsController {
             };
           }
           acc[yearMonthKey].count += data.count;
-  
+
           // Check for returning users
           const returningUserStatus = analytics.monthlyUserStatus.find(
             (status) => status.year === data.year && status.month === data.month
@@ -545,14 +545,14 @@ export class AnalyticsController {
         });
         return acc;
       }, {} as { [key: string]: AnalyticsData });
-  
+
       users.forEach((user) => {
         // Ensure user.createdAt is not undefined
         if (user.createdAt) {
           const registrationDate = new Date(user.createdAt);  // Safely create a Date object
           const registrationYear = registrationDate.getFullYear();
           const registrationMonth = registrationDate.getMonth() + 1; // Month is 0-based
-      
+
           const yearMonthKey = `${registrationYear}-${registrationMonth}`;
           if (groupedAnalytics[yearMonthKey]) {
             groupedAnalytics[yearMonthKey].newUsers += 1;  // Increment new user count for the year-month
@@ -567,7 +567,7 @@ export class AnalyticsController {
           }
         }
       });
-  
+
       // Prepare the result data for graph
       const resultData = Object.values(groupedAnalytics).map((data) => ({
         year: data.year,
@@ -576,7 +576,7 @@ export class AnalyticsController {
         returningUsers: data.returningUsers,
         newUsers: data.newUsers,
       }));
-  
+
       return {
         success: true,
         message: 'User analytics fetched successfully.',
@@ -587,6 +587,101 @@ export class AnalyticsController {
       throw error;
     }
   }
+
+  // @authenticate({
+  //   strategy: 'jwt',
+  //   options: [PermissionKeys.ADMIN],
+  // })
+  @get('/analytics-by-userId/{userId}')
+  async userAnalyticsById(
+    @param.path.number('userId') userId: number,
+  ): Promise<{ success: boolean; message: string; data: object }> {
+    try {
+      const user = await this.usersRepository.findById(userId);
+      if (!user) {
+        throw new HttpErrors.NotFound('User not found');
+      }
+
+      // 1. Audio History Data
+      const audioHistoryData : any = await this.audioHistoryRepository.find({
+        where: {
+          usersId: userId,
+        },
+        include: [
+          { relation: 'stories' },
+          { relation: 'languageData' },
+        ],
+      });
+
+      // Calculate cumulative listening duration
+      let cumulativeListeningDuration = 0;
+      let languageWiseDuration: any[] = [];
+
+      for (const entry of audioHistoryData) {
+        cumulativeListeningDuration += entry.cumulativeListeningDuration || 0;
+
+        const language : any = entry.languageData;
+        if (language) {
+          const existingLang = languageWiseDuration.find((l: any) => l.id === language.id);
+          if (existingLang) {
+            existingLang.cumulativeListeningDuration += entry.cumulativeListeningDuration || 0;
+            existingLang.usersCount += 1;
+          } else {
+            languageWiseDuration.push({
+              ...language,
+              cumulativeListeningDuration: entry.cumulativeListeningDuration || 0,
+              usersCount: 1,
+            });
+          }
+        }
+      }
+
+      // 2. Liked Stories
+      const likedStories = await this.likedStorieRepository.find({
+        where: {
+          usersId: userId,
+        },
+        include: [{ relation: 'stories' }],
+      });
+
+      // 3. Downloaded Stories
+      const downloadStories = await this.downloadStoriesRepository.find({
+        where: {
+          usersId: userId,
+        },
+        include: [{ relation: 'stories' }],
+      });
+
+      // 4. Build structured data
+      const data = {
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          avatar: user.avatar,
+        },
+        analytics: {
+          cumulativeListeningDuration,
+          languageWiseData: languageWiseDuration,
+          audioHistory: audioHistoryData,
+          likedStoriesCount: likedStories.length,
+          downloadStoriesCount: downloadStories.length,
+          likedStories: likedStories,
+          downloadedStories: downloadStories,
+        },
+      };
+
+      return {
+        success: true,
+        message: 'User analytics fetched successfully',
+        data: data,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+
 }
 // reports
 

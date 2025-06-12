@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router';
 // @mui
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
@@ -13,6 +14,7 @@ import ListItemText from '@mui/material/ListItemText';
 // hooks
 import { useBoolean } from 'src/hooks/use-boolean';
 // components
+import { paths } from 'src/routes/paths';
 import Label from 'src/components/label';
 import Iconify from 'src/components/iconify';
 import CustomPopover, { usePopover } from 'src/components/custom-popover';
@@ -23,6 +25,7 @@ import UserQuickEditForm from './user-quick-edit-form';
 // ----------------------------------------------------------------------
 
 export default function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow, onRefreshUsers, onSessionIconClick }) {
+  const navigate = useNavigate();
   const { firstName, lastName, avatar, email, permissions, isActive, phoneNumber } = row;
 
   const name = `${firstName || ''} ${lastName || ''}`
@@ -84,6 +87,18 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
               <Iconify icon="mdi:clock" />
             </IconButton>
           </Tooltip>
+
+          <Tooltip title="Analytics" placement="top" arrow>
+            <IconButton
+              color="default"
+              onClick={() => {
+                navigate(paths.dashboard.user.analytics(row.id));
+              }}
+            >
+              <Iconify icon="eva:bar-chart-fill" />
+            </IconButton>
+          </Tooltip>
+          
 
           {/* <IconButton color={popover.open ? 'inherit' : 'default'} onClick={popover.onOpen}>
             <Iconify icon="eva:more-vertical-fill" />

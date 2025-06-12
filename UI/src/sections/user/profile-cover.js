@@ -52,7 +52,6 @@ export default function ProfileCover({ name, avatarUrl, role, coverUrl }) {
             textAlign: { xs: 'center', md: 'unset' },
           }}
           primary={name}
-          secondary={role}
           primaryTypographyProps={{
             typography: 'h4',
           }}

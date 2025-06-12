@@ -82,6 +82,7 @@ export class CommentsController {
           },
           limit : limit || 10,
           skip : skip || 0,
+          order: ['createdAt DESC'],
           include : [
             {
               relation: 'users',
