@@ -217,7 +217,7 @@ export class StoriesController {
     @inject(RestBindings.Http.REQUEST) request: Request,
   ): Promise<{ success: boolean; message: string; data: object }> {
     try {
-      const story = await this.storiesRepository.findOne({
+      const story : any = await this.storiesRepository.findOne({
         where: { id: storyId },
         include: [
           {
@@ -249,13 +249,9 @@ export class StoriesController {
         user = await this.usersRepository.findById(currentUser.id);
       }
 
-      console.log('user', user);
-
       let filteredAudios : any = story.audios;
 
       let isLiked = false;
-
-      console.log('data_enter', isLiked );
 
       let isDownload = false;
 
@@ -271,13 +267,11 @@ export class StoriesController {
             ]
           }
         });
-        console.log('user', user);
-        console.log('liked stories', likedStory);
+
         if(likedStory){
           isLiked = true;
         }
 
-        console.log('data_1', isLiked );
       }
       if (user && user.audioLanguage) {
         // Filter first by user's audio language
@@ -291,9 +285,7 @@ export class StoriesController {
             (audio: any) => audio.language.code === 'en'
           );
         }
-      
-        console.log('filteredaudios', filteredAudios);
-      
+            
         const likedStory = await this.likedStoriesRepository.findOne({
           where: {
             and: [
@@ -307,7 +299,6 @@ export class StoriesController {
         if (likedStory) {
           isLiked = true;
         }
-        console.log('data_2', isLiked );
       
         const downloadStory = await this.downloadStoriesRepository.findOne({
           where: { usersId: user.id, storiesId: story.id },
@@ -336,7 +327,6 @@ export class StoriesController {
         if (likedStory) {
           isLiked = true;
         }
-        console.log('data_3', isLiked );
       
         const downloadStory = await this.downloadStoriesRepository.findOne({
           where: { usersId: user.id, storiesId: story.id },
@@ -357,7 +347,7 @@ export class StoriesController {
           where : {
             usersId : user.id,
             storiesId : story.id,
-            language : filteredAudios[0].language?.id
+            language : filteredAudios ? filteredAudios[0]?.language?.id : story?.audios[0]?.language?.id
           }
         });
 
@@ -366,8 +356,6 @@ export class StoriesController {
           lastDuration = audioHistory.lastDuration
         }
       }
-
-      console.log('data_last', isLiked );
 
       const filteredStory = {
         ...story,
