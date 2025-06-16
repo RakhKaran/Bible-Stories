@@ -371,7 +371,7 @@ export class StoriesController {
 
       const filteredStory = {
         ...story,
-        audios: filteredAudios,
+        audios: filteredAudios ? filteredAudios : story?.audios[0],
         isLiked,
         isDownload,
         lastDuration
@@ -518,7 +518,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
 
                 let lastDuration = 0;
 
@@ -557,7 +557,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
 
                 let lastDuration = 0;
 
@@ -596,7 +596,7 @@ export class StoriesController {
               
               oldTestamentStories.push({
                 ...story,
-                audios: filteredAudios, // Replace audios array with the filtered or fallback one
+                audios: filteredAudios ? filteredAudios : story?.audios[0], // Replace audios array with the filtered or fallback one
                 lastDuration
               });
     
@@ -614,7 +614,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
 
                 let lastDuration = 0;
 
@@ -654,7 +654,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
       
                 let lastDuration = 0;
 
@@ -693,7 +693,7 @@ export class StoriesController {
     
               newTestamentStories.push({
                 ...story,
-                audios: filteredAudios, // Replace audios array with the filtered or fallback one
+                audios: filteredAudios ? filteredAudios : story?.audios[0], // Replace audios array with the filtered or fallback one
                 lastDuration
               });    
             });
@@ -771,8 +771,8 @@ export class StoriesController {
 
           // if any story is not available in that audio language
           const fallbackAudios : any = filteredAudios.length
-            ? filteredAudios
-            : story.audios.filter((audio: any) => audio?.language?.code === 'en');
+                ? filteredAudios
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
 
           let lastDuration = 0;
 
@@ -809,9 +809,9 @@ export class StoriesController {
           );
 
           // if any story is not available in that audio language
-          const fallbackAudios : any = filteredAudios.length
-            ? filteredAudios
-            : story.audios.filter((audio: any) => audio?.language?.code === 'en');
+           const fallbackAudios : any = filteredAudios.length
+                ? filteredAudios
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
 
             let lastDuration = 0;
 
@@ -850,7 +850,7 @@ export class StoriesController {
 
         return {
           ...story,
-          audios: filteredAudios, // Replace audios array with the filtered or fallback one
+          audios: filteredAudios ? filteredAudios : story?.audios[0], // Replace audios array with the filtered or fallback one
           lastDuration
         };
 
@@ -1026,7 +1026,6 @@ export class StoriesController {
            );
          }
        
-         console.log('filteredaudios', filteredAudios);
        
          const likedStory = await this.likedStoriesRepository.findOne({
            where: { usersId: user.id, storiesId: story.id },
@@ -1098,7 +1097,7 @@ export class StoriesController {
  
        const filteredStory = {
          ...story,
-         audios: filteredAudios,
+         audios: filteredAudios ? filteredAudios : story?.audios[0],
          isLiked,
          isDownload,
          lastDuration
