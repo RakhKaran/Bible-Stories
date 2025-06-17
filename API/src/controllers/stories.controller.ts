@@ -168,7 +168,9 @@ export class StoriesController {
         filteredStories = stories.map((story) => {
           const filteredAudios = story.audios.filter((audio : any) => 
             audio?.language?.code === 'en'
-          );
+          )?.length > 0 ? story.audios.filter((audio : any) => 
+            audio?.language?.code === 'en'
+          ) : [story.audios[0]];
 
         return {
           ...story,
@@ -217,7 +219,7 @@ export class StoriesController {
     @inject(RestBindings.Http.REQUEST) request: Request,
   ): Promise<{ success: boolean; message: string; data: object }> {
     try {
-      const story : any = await this.storiesRepository.findOne({
+      const story = await this.storiesRepository.findOne({
         where: { id: storyId },
         include: [
           {
@@ -239,7 +241,6 @@ export class StoriesController {
       // checking for header
       const authHeader = request.headers.authorization;
       let currentUser : any = {};
-      console.log('Auth header', authHeader);
       if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
@@ -267,11 +268,9 @@ export class StoriesController {
             ]
           }
         });
-
         if(likedStory){
           isLiked = true;
         }
-
       }
       if (user && user.audioLanguage) {
         // Filter first by user's audio language
@@ -317,7 +316,9 @@ export class StoriesController {
         if (filteredAudios.length === 0) {
           filteredAudios = story.audios.filter(
             (audio: any) => audio.language.code === 'en'
-          );
+          )?.length > 0 ? story.audios.filter(
+            (audio: any) => audio.language.code === 'en'
+          ) : [story?.audios[0]]
         }
       
         const likedStory = await this.likedStoriesRepository.findOne({
@@ -339,7 +340,9 @@ export class StoriesController {
         // Default to English audio
         filteredAudios = story.audios.filter(
           (audio: any) => audio.language.code === 'en'
-        );
+        )?.length > 0 ? filteredAudios = story.audios.filter(
+          (audio: any) => audio.language.code === 'en'
+        ) : [story?.audios[0]];
       }      
 
       if(user && Object.keys(user).length > 0){
@@ -347,7 +350,7 @@ export class StoriesController {
           where : {
             usersId : user.id,
             storiesId : story.id,
-            language : filteredAudios ? filteredAudios[0]?.language?.id : story?.audios[0]?.language?.id
+            language : filteredAudios[0].language?.id
           }
         });
 
@@ -359,7 +362,7 @@ export class StoriesController {
 
       const filteredStory = {
         ...story,
-        audios: filteredAudios ? filteredAudios : story?.audios[0],
+        audios: filteredAudios,
         isLiked,
         isDownload,
         lastDuration
@@ -462,8 +465,6 @@ export class StoriesController {
 
       let user : any = {};
 
-      console.log(authHeader);
-
       if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
         currentUser = await this.validateCredentials(authHeader);
       }
@@ -498,7 +499,7 @@ export class StoriesController {
           if (user && user.audioLanguage) {
             // Filter stories to include only audio matching the user's selected language
             await Promise.all(
-              stories.map(async(story) => {
+              stories.map(async(story : any) => {
                 const filteredAudios = story.audios.filter((audio : any) => 
                   audio?.language?.id === user.audioLanguage
                 );
@@ -506,7 +507,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
 
                 let lastDuration = 0;
 
@@ -514,7 +515,7 @@ export class StoriesController {
                   where : {
                     usersId : user.id,
                     storiesId : story.id,
-                    language : fallbackAudios[0].language?.id
+                    language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0].language?.id 
                   }
                 });
         
@@ -525,7 +526,7 @@ export class StoriesController {
       
               oldTestamentStories.push({
                 ...story,
-                audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+                audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
                 lastDuration
               });
       
@@ -537,7 +538,7 @@ export class StoriesController {
           else if (user && !user.audioLanguage && user.appLanguage) {
             // Filter stories to include only audio matching the user's selected language
             await Promise.all(
-              stories.map(async(story) => {
+              stories.map(async(story : any) => {
                 const filteredAudios = story.audios.filter((audio : any) => 
                   audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
                 );
@@ -545,7 +546,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
 
                 let lastDuration = 0;
 
@@ -553,7 +554,7 @@ export class StoriesController {
                   where : {
                     usersId : user.id,
                     storiesId : story.id,
-                    language : fallbackAudios[0].language?.id
+                    language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0].language?.id
                   }
                 });
         
@@ -564,7 +565,7 @@ export class StoriesController {
       
                 oldTestamentStories.push({
                   ...story,
-                  audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+                  audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
                   lastDuration
                 });
       
@@ -578,13 +579,15 @@ export class StoriesController {
             stories.map((story) => {
               const filteredAudios = story.audios.filter((audio : any) => 
                 audio?.language?.code === 'en'
-              );
+              ).length > 0 ? story.audios.filter((audio : any) => 
+                audio?.language?.code === 'en'
+              ) : story?.audios[0];
 
               const lastDuration = 0;
               
               oldTestamentStories.push({
                 ...story,
-                audios: filteredAudios ? filteredAudios : story?.audios[0], // Replace audios array with the filtered or fallback one
+                audios: filteredAudios, // Replace audios array with the filtered or fallback one
                 lastDuration
               });
     
@@ -594,7 +597,7 @@ export class StoriesController {
           if (user && user.audioLanguage) {
             // Filter stories to include only audio matching the user's selected language
             await Promise.all(
-              stories.map(async(story) => {
+              stories.map(async(story : any) => {
                 const filteredAudios = story.audios.filter((audio : any) => 
                   audio?.language?.id === user.audioLanguage
                 );
@@ -602,7 +605,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
 
                 let lastDuration = 0;
 
@@ -610,7 +613,7 @@ export class StoriesController {
                   where : {
                     usersId : user.id,
                     storiesId : story.id,
-                    language : fallbackAudios[0].language?.id
+                    language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
                   }
                 });
         
@@ -622,7 +625,7 @@ export class StoriesController {
       
               newTestamentStories.push({
                 ...story,
-                audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+                audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
                 lastDuration
               });
       
@@ -634,7 +637,7 @@ export class StoriesController {
           else if (user && !user.audioLanguage && user.appLanguage) {
             // Filter stories to include only audio matching the user's selected language
             await Promise.all(
-              stories.map(async(story) => {
+              stories.map(async(story : any) => {
                 const filteredAudios = story.audios.filter((audio : any) => 
                   audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
                 );
@@ -642,7 +645,7 @@ export class StoriesController {
               // if any story is not available in that audio language
               const fallbackAudios : any = filteredAudios.length
                 ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
+                : story.audios.filter((audio: any) => audio?.language?.code === 'en');
       
                 let lastDuration = 0;
 
@@ -650,7 +653,7 @@ export class StoriesController {
                   where : {
                     usersId : user.id,
                     storiesId : story.id,
-                    language : fallbackAudios[0].language?.id
+                    language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
                   }
                 });
         
@@ -661,7 +664,7 @@ export class StoriesController {
       
                 newTestamentStories.push({
                   ...story,
-                  audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+                  audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
                   lastDuration
                 });
       
@@ -675,13 +678,15 @@ export class StoriesController {
             stories.map((story) => {
               const filteredAudios = story.audios.filter((audio : any) => 
                 audio?.language?.code === 'en'
-              );
+              )?.length > 0 ? story.audios.filter((audio : any) => 
+                audio?.language?.code === 'en'
+              ) : story?.audios[0];
 
               const lastDuration = 0;
     
               newTestamentStories.push({
                 ...story,
-                audios: filteredAudios ? filteredAudios : story?.audios[0], // Replace audios array with the filtered or fallback one
+                audios: filteredAudios, // Replace audios array with the filtered or fallback one
                 lastDuration
               });    
             });
@@ -697,9 +702,6 @@ export class StoriesController {
           newTestamentStories : newTestamentStories
         }
       }
-
-      console.log('response from api', response);
-      console.log('old testament stories', oldTestamentStories);
       
       return{
         success : true,
@@ -752,15 +754,15 @@ export class StoriesController {
       if (user && user.audioLanguage) {
         // Filter stories to include only audio matching the user's selected language
         filteredStories = await Promise.all(
-          stories.map(async (story) => {
+          stories.map(async (story : any) => {
           const filteredAudios = story.audios.filter((audio : any) => 
             audio?.language?.id === user.audioLanguage
           );
 
           // if any story is not available in that audio language
           const fallbackAudios : any = filteredAudios.length
-                ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
+            ? filteredAudios
+            : story.audios.filter((audio: any) => audio?.language?.code === 'en');
 
           let lastDuration = 0;
 
@@ -768,7 +770,7 @@ export class StoriesController {
             where : {
               usersId : user.id,
               storiesId : story.id,
-              language : fallbackAudios[0].language?.id
+              language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
             }
           });
 
@@ -779,7 +781,7 @@ export class StoriesController {
 
           return {
             ...story,
-            audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+            audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]], // Replace audios array with the filtered or fallback one
             lastDuration
           };
 
@@ -791,15 +793,15 @@ export class StoriesController {
       else if (user && !user.audioLanguage && user.appLanguage) {
         // Filter stories to include only audio matching the user's selected language
         filteredStories = await Promise.all(
-          stories.map(async (story) => {
+          stories.map(async (story : any) => {
           const filteredAudios = story.audios.filter((audio : any) => 
             audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
           );
 
           // if any story is not available in that audio language
-           const fallbackAudios : any = filteredAudios.length
-                ? filteredAudios
-                : story.audios.filter((audio: any) => audio?.language?.code === 'en')?.length > 0 ? story.audios.filter((audio: any) => audio?.language?.code === 'en') : story.audios;
+          const fallbackAudios : any = filteredAudios.length
+            ? filteredAudios
+            : story.audios.filter((audio: any) => audio?.language?.code === 'en');
 
             let lastDuration = 0;
 
@@ -807,7 +809,7 @@ export class StoriesController {
             where : {
               usersId : user.id,
               storiesId : story.id,
-              language : fallbackAudios[0].language?.id
+              language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
             }
           });
 
@@ -818,7 +820,7 @@ export class StoriesController {
 
           return {
             ...story,
-            audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+            audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
             lastDuration
           };
 
@@ -832,13 +834,15 @@ export class StoriesController {
         filteredStories = stories.map((story) => {
           const filteredAudios = story.audios.filter((audio : any) => 
             audio?.language?.code === 'en'
-          );
+          )?.length > 0 ? story.audios.filter((audio : any) => 
+            audio?.language?.code === 'en'
+          ) : [story?.audios[0]];
 
           const lastDuration = 0;
 
         return {
           ...story,
-          audios: filteredAudios ? filteredAudios : story?.audios[0], // Replace audios array with the filtered or fallback one
+          audios: filteredAudios, // Replace audios array with the filtered or fallback one
           lastDuration
         };
 
@@ -1011,7 +1015,9 @@ export class StoriesController {
          if (filteredAudios.length === 0) {
            filteredAudios = story.audios.filter(
              (audio: any) => audio.language.code === 'en'
-           );
+           )?.length > 0 ? story.audios.filter(
+             (audio: any) => audio.language.code === 'en'
+           ) : [story?.audios[0]];
          }
        
        
@@ -1040,7 +1046,9 @@ export class StoriesController {
          if (filteredAudios.length === 0) {
            filteredAudios = story.audios.filter(
              (audio: any) => audio.language.code === 'en'
-           );
+           )?.length > 0 ? story.audios.filter(
+             (audio: any) => audio.language.code === 'en'
+           ) : [story?.audios[0]];
          }
        
          const likedStory = await this.likedStoriesRepository.findOne({
@@ -1061,13 +1069,13 @@ export class StoriesController {
        } else {
          // Default to English audio
          filteredAudios = story.audios.filter(
-           (audio: any) => audio.language.code === 'en'
-         );
+             (audio: any) => audio.language.code === 'en'
+           )?.length > 0 ? story.audios.filter(
+             (audio: any) => audio.language.code === 'en'
+           ) : [story?.audios[0]];
        }      
  
        if(user){
-         console.log(user);
-         console.log(filteredAudios);
          const audioHistory = await this.audioHistoryRepository.findOne({
            where : {
              usersId : user.id,
@@ -1075,9 +1083,7 @@ export class StoriesController {
              language : filteredAudios[0].language?.id
            }
          });
- 
-         console.log(audioHistory);
- 
+  
          if(audioHistory){
            lastDuration = audioHistory.lastDuration
          }
@@ -1085,7 +1091,7 @@ export class StoriesController {
  
        const filteredStory = {
          ...story,
-         audios: filteredAudios ? filteredAudios : story?.audios[0],
+         audios: filteredAudios,
          isLiked,
          isDownload,
          lastDuration
