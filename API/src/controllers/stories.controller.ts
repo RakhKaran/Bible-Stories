@@ -526,7 +526,7 @@ export class StoriesController {
       
               oldTestamentStories.push({
                 ...story,
-                audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
+                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]], // Replace audios array with the filtered or fallback one
                 lastDuration
               });
       
@@ -565,7 +565,7 @@ export class StoriesController {
       
                 oldTestamentStories.push({
                   ...story,
-                  audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
+                  audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]], // Replace audios array with the filtered or fallback one
                   lastDuration
                 });
       
@@ -625,7 +625,7 @@ export class StoriesController {
       
               newTestamentStories.push({
                 ...story,
-                audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
+                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]], // Replace audios array with the filtered or fallback one
                 lastDuration
               });
       
@@ -664,7 +664,7 @@ export class StoriesController {
       
                 newTestamentStories.push({
                   ...story,
-                  audios: fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id, // Replace audios array with the filtered or fallback one
+                  audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]], // Replace audios array with the filtered or fallback one
                   lastDuration
                 });
       
