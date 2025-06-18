@@ -121,7 +121,7 @@ export class LikedStoriesController {
                 where : {
                   usersId : user.id,
                   storiesId : story?.stories?.id,
-                  language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
+                  language : fallbackAudios?.length > 0 ? fallbackAudios[0]?.language?.id : story?.audios[0]?.language?.id
                 }
               });
     
@@ -157,7 +157,7 @@ export class LikedStoriesController {
                 where : {
                   usersId : user.id,
                   storiesId : story?.stories?.id,
-                  language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
+                  language : fallbackAudios?.length > 0 ? fallbackAudios[0]?.language?.id : story?.audios[0]?.language?.id
                 }
               });
     
