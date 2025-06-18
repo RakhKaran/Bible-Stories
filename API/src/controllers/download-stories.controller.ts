@@ -126,7 +126,7 @@ export class DownloadStoriesController{
             ...story,
             stories: {
               ...story.stories,
-              audios: fallbackAudios.length > 0 ? fallbackAudios : [story?.audios[0]],
+              audios: fallbackAudios.length > 0 ? fallbackAudios : [story?.stories?.audios[0]],
             },
           };
         });
@@ -144,7 +144,7 @@ export class DownloadStoriesController{
             ...story,
             stories: {
               ...story.stories,
-              audios: fallbackAudios.length > 0 ? fallbackAudios : [story?.audios[0]],
+              audios: fallbackAudios.length > 0 ? fallbackAudios : [story?.stories?.audios[0]],
             },
           };
         });

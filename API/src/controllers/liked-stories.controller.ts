@@ -121,7 +121,7 @@ export class LikedStoriesController {
                 where : {
                   usersId : user.id,
                   storiesId : story?.stories?.id,
-                  language : fallbackAudios?.length > 0 ? fallbackAudios[0]?.language?.id : story?.audios[0]?.language?.id
+                  language : fallbackAudios?.length > 0 ? fallbackAudios[0]?.language?.id : story?.stories?.audios[0]?.language?.id
                 }
               });
     
@@ -134,7 +134,7 @@ export class LikedStoriesController {
               ...story,
               stories: {
                 ...story.stories,
-                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]],
+                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.stories?.audios[0]],
                 lastDuration
               },
             };
@@ -157,7 +157,7 @@ export class LikedStoriesController {
                 where : {
                   usersId : user.id,
                   storiesId : story?.stories?.id,
-                  language : fallbackAudios?.length > 0 ? fallbackAudios[0]?.language?.id : story?.audios[0]?.language?.id
+                  language : fallbackAudios?.length > 0 ? fallbackAudios[0]?.language?.id : story?.stories?.audios[0]?.language?.id
                 }
               });
     
@@ -170,7 +170,7 @@ export class LikedStoriesController {
               ...story,
               stories: {
                 ...story.stories,
-                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]],
+                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.stories?.audios[0]],
                 lastDuration
               },
             };
