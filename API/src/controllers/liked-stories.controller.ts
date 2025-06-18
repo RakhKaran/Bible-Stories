@@ -121,7 +121,7 @@ export class LikedStoriesController {
                 where : {
                   usersId : user.id,
                   storiesId : story?.stories?.id,
-                  language : fallbackAudios[0].language?.id
+                  language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
                 }
               });
     
@@ -134,7 +134,7 @@ export class LikedStoriesController {
               ...story,
               stories: {
                 ...story.stories,
-                audios: fallbackAudios,
+                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]],
                 lastDuration
               },
             };
@@ -157,7 +157,7 @@ export class LikedStoriesController {
                 where : {
                   usersId : user.id,
                   storiesId : story?.stories?.id,
-                  language : fallbackAudios[0].language?.id
+                  language : fallbackAudios?.length > 0 ? fallbackAudios[0].language?.id : story?.audios[0]?.language?.id
                 }
               });
     
@@ -170,7 +170,7 @@ export class LikedStoriesController {
               ...story,
               stories: {
                 ...story.stories,
-                audios: fallbackAudios,
+                audios: fallbackAudios?.length > 0 ? fallbackAudios : [story?.audios[0]],
                 lastDuration
               },
             };
@@ -180,7 +180,9 @@ export class LikedStoriesController {
         filteredStories = filteredLikedStories.map((story: any) => {
           const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
             audio?.language?.code === 'en'
-          );
+          ).length > 0 ? story?.stories?.audios?.filter((audio: any) =>
+            audio?.language?.code === 'en'
+          ) : [story?.audios[0]];
           
           const lastDuration = 0;
           return {

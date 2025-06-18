@@ -126,7 +126,7 @@ export class DownloadStoriesController{
             ...story,
             stories: {
               ...story.stories,
-              audios: fallbackAudios,
+              audios: fallbackAudios.length > 0 ? fallbackAudios : [story?.audios[0]],
             },
           };
         });
@@ -144,7 +144,7 @@ export class DownloadStoriesController{
             ...story,
             stories: {
               ...story.stories,
-              audios: fallbackAudios,
+              audios: fallbackAudios.length > 0 ? fallbackAudios : [story?.audios[0]],
             },
           };
         });
@@ -152,7 +152,9 @@ export class DownloadStoriesController{
         filteredStories = filteredDownloadedStories.map((story: any) => {
           const filteredAudios = story?.stories?.audios?.filter((audio: any) =>
             audio?.language?.code === 'en'
-          );
+          )?.length > 0 ? story?.stories?.audios?.filter((audio: any) =>
+            audio?.language?.code === 'en'
+          ) : [story?.audios[0]];
   
           return {
             ...story,
