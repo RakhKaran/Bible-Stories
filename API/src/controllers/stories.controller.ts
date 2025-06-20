@@ -769,6 +769,7 @@ export class StoriesController {
       let filteredStories: any[] = [];
 
       if (user && user.audioLanguage) {
+        console.log(user.audioLanguage);
         filteredStories = (
           await Promise.all(
             rawStories.map(async (story: any) => {
@@ -824,6 +825,8 @@ export class StoriesController {
 
       // Now apply pagination after filtering
       const paginatedStories = filteredStories.slice(skip, skip + limit);
+
+      console.log('peginated stories', paginatedStories);
 
       return {
         success: true,
