@@ -757,76 +757,60 @@ export class StoriesController {
         user = await this.usersRepository.findById(currentUser.id);
       }
 
-      // Fetch more stories than needed, to account for filtering
-      const buffer = 30;
-      const rawStories = await this.storiesRepository.find({
+      const allStories = await this.storiesRepository.find({
         where: { categoryId },
         order: ['createdAt DESC'],
-        limit: limit + skip + buffer,
-        skip: 0,
       });
 
       let filteredStories: any[] = [];
 
-      if (user && user.audioLanguage) {
-        console.log(user.audioLanguage);
-        filteredStories = (
-          await Promise.all(
-            rawStories.map(async (story: any) => {
-              const filteredAudios = story.audios.filter(
-                (audio: any) => audio?.language?.id === user.audioLanguage
-              );
+      for (const story of allStories) {
+        let selectedAudios : any = [];
 
-              if (filteredAudios.length === 0) return null;
+        if (user && user.audioLanguage) {
+          selectedAudios = story.audios.filter(
+            (audio: any) => audio?.language?.id === user.audioLanguage
+          );
+        } else {
+          selectedAudios = story.audios.filter(
+            (audio: any) => audio?.language?.code === 'en'
+          );
 
-              let lastDuration = 0;
-              const audioHistory = await this.audioHistoryRepository.findOne({
-                where: {
-                  usersId: user.id,
-                  storiesId: story.id,
-                  language: filteredAudios[0].language?.id,
-                },
-              });
+          if (selectedAudios.length === 0 && story.audios.length > 0) {
+            selectedAudios = [story.audios[0]];
+          }
+        }
 
-              if (audioHistory) {
-                lastDuration = audioHistory.lastDuration;
-              }
+        if (selectedAudios.length === 0) continue;
 
-              return {
-                ...story,
-                audios: filteredAudios,
-                lastDuration,
-              };
-            })
-          )
-        ).filter(Boolean); // remove nulls
-      } else {
-        // Guest users or no audioLanguage
-        filteredStories = rawStories
-          .map((story: any) => {
-            let selectedAudios = story.audios.filter(
-              (audio: any) => audio?.language?.code === 'en'
-            );
+        let lastDuration = 0;
+        if (user && user.audioLanguage) {
+          const audioHistory = await this.audioHistoryRepository.findOne({
+            where: {
+              usersId: user.id,
+              storiesId: story.id,
+              language: selectedAudios[0].language?.id,
+            },
+          });
 
-            if (selectedAudios.length === 0 && story.audios.length > 0) {
-              selectedAudios = [story.audios[0]]; // fallback to first audio
-            }
+          if (audioHistory) {
+            lastDuration = audioHistory.lastDuration;
+          }
+        }
 
-            if (selectedAudios.length === 0) return null; // skip if no audio
+        filteredStories.push({
+          ...story,
+          audios: selectedAudios,
+          lastDuration,
+        });
 
-            return {
-              ...story,
-              audios: selectedAudios,
-              lastDuration: 0,
-            };
-          })
-          .filter(Boolean); // remove nulls
+        // Stop if we have enough
+        if (filteredStories.length >= skip + limit) break;
       }
 
-      // Now apply pagination after filtering
       const paginatedStories = filteredStories.slice(skip, skip + limit);
 
-      console.log('peginated stories', paginatedStories);
+      console.log('paginated stories', paginatedStories);
 
       return {
         success: true,
@@ -837,6 +821,7 @@ export class StoriesController {
       throw error;
     }
   }
+
 
   // update story by id...
   @authenticate({
