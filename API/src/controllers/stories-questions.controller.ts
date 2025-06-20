@@ -13,27 +13,27 @@ export class StoriesQuestionsController {
     @inject('datasources.bibleStories')
     public dataSource: BibleStoriesDataSource,
     @repository(StoriesQuestionsRepository)
-    public storiesQuestionsRepository : StoriesQuestionsRepository,
+    public storiesQuestionsRepository: StoriesQuestionsRepository,
     @repository(UsersRepository)
-    public usersRepository : UsersRepository,
+    public usersRepository: UsersRepository,
     @inject('service.jwt.service')
     public jwtService: JWTService,
-  ) {}
+  ) { }
 
   // fetching token from header and returning userProfile...
-  async validateCredentials(authHeader : string){
-    try{
-      if(authHeader){
+  async validateCredentials(authHeader: string) {
+    try {
+      if (authHeader) {
         const parts = authHeader.split(' ');
-        if(parts.length !== 2){
+        if (parts.length !== 2) {
           throw new HttpErrors.BadRequest('Verify token! incorrect signature');
         }
-        const token = parts[1]; 
+        const token = parts[1];
         const userProfile = await this.jwtService.verifyToken(token);
 
         return userProfile
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -41,7 +41,7 @@ export class StoriesQuestionsController {
   // new story question..
   @authenticate({
     strategy: 'jwt',
-    options: {required: [PermissionKeys.ADMIN]},
+    options: { required: [PermissionKeys.ADMIN] },
   })
   @post('/stories-questions', {
     responses: {
@@ -67,17 +67,17 @@ export class StoriesQuestionsController {
   ) {
     const repo = new DefaultTransactionalRepository(Stories, this.dataSource);
     const tx = await repo.beginTransaction(IsolationLevel.READ_COMMITTED);
-    try{
-      await this.storiesQuestionsRepository.create(storyQuestionData,{
+    try {
+      await this.storiesQuestionsRepository.create(storyQuestionData, {
         transaction: tx,
       });
       await tx.commit();
 
-      return{
-        success : true,
-        message : 'New question Created'
+      return {
+        success: true,
+        message: 'New question Created'
       }
-    }catch(error){
+    } catch (error) {
       await tx.rollback();
       throw error;
     }
@@ -86,83 +86,91 @@ export class StoriesQuestionsController {
   // get Stories Questions..
   @get('/story-question-list/{storyId}')
   async fetchStoriesQuestions(
-    @param.path.number('storyId') storyId : number,
-    @inject(RestBindings.Http.REQUEST) request : Request,
+    @param.path.number('storyId') storyId: number,
+    @inject(RestBindings.Http.REQUEST) request: Request,
   ): Promise<{ success: boolean; message: string; data: object }> {
     try {
       // checking for header
       const authHeader = request.headers.authorization;
-      let currentUser : any = {};
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
+      let currentUser: any = {};
+      if (authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer') {
         currentUser = await this.validateCredentials(authHeader);
       }
       // Fetching user for audio language
-      let user : any = {}
-      if(currentUser.id){
+      let user: any = {}
+      if (currentUser.id) {
         user = await this.usersRepository.findById(currentUser.id);
       }
 
       // Fetching all stories
-      const storiesQuestions = await this.storiesQuestionsRepository.find({where : {storiesId : storyId}});
+      const storiesQuestions = await this.storiesQuestionsRepository.find({ where: { storiesId: storyId } });
 
-      let filteredStories : any = storiesQuestions;
+      let filteredStories: any = storiesQuestions;
 
       // Check if user exists and has an audio language preference
       if (user && user.audioLanguage) {
         // Filter stories to include only audio matching the user's selected language
         filteredStories = storiesQuestions.map((question) => {
-          const filteredAudios = question.audios.filter((audio : any) => 
+          const filteredAudios = question.audios.filter((audio: any) =>
             audio?.language?.id === user.audioLanguage
           );
 
-        // if any story is not available in that audio language
-        const fallbackAudios = filteredAudios.length
-          ? filteredAudios
-          : question.audios.filter((audio: any) => audio?.language?.code === 'en');
+          // if any story is not available in that audio language
+          // const fallbackAudios = filteredAudios.length
+          //   ? filteredAudios
+          //   : question.audios.filter((audio: any) => audio?.language?.code === 'en');
 
-        return {
-          ...question,
-          audios: fallbackAudios, // Replace audios array with the filtered or fallback one
-        };
+          if (filteredAudios?.length === 0) return null;
 
-        });
+          return {
+            ...question,
+            audios: filteredAudios, // Replace audios array with the filtered or fallback one
+          };
+
+        }).filter(Boolean);
       }
 
       // user exists but audio language yet not set then try to compare with app lang...
-      else if (user && !user.audioLanguage && user.appLanguage) {
-        // Filter stories to include only audio matching the user's selected language
-        filteredStories = storiesQuestions.map((question) => {
-          const filteredAudios = question.audios.filter((audio : any) => 
-            audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
-          );
+      // else if (user && !user.audioLanguage && user.appLanguage) {
+      //   // Filter stories to include only audio matching the user's selected language
+      //   filteredStories = storiesQuestions.map((question) => {
+      //     const filteredAudios = question.audios.filter((audio : any) => 
+      //       audio?.language?.langName?.toLowerCase() === user?.appLanguage?.toLowerCase()
+      //     );
 
-        // if any story is not available in that audio language
-        const fallbackAudios = filteredAudios.length
-          ? filteredAudios
-          : question.audios.filter((audio: any) => audio?.language?.code === 'en');
+      //   // if any story is not available in that audio language
+      //   const fallbackAudios = filteredAudios.length
+      //     ? filteredAudios
+      //     : question.audios.filter((audio: any) => audio?.language?.code === 'en');
 
-        return {
-          ...question,
-          audios: fallbackAudios, // Replace audios array with the filtered or fallback one
-        };
+      //   return {
+      //     ...question,
+      //     audios: fallbackAudios, // Replace audios array with the filtered or fallback one
+      //   };
 
-        });
-      }
+      //   });
+      // }
 
       // returning english lang audio file...
-      else{
-        // Filter stories to include only audio matching the user's selected language
-        filteredStories = storiesQuestions.map((question) => {
-          const filteredAudios = question.audios.filter((audio : any) => 
-            audio?.language?.code === 'en'
-          );
+      else {
+        filteredStories = storiesQuestions
+          .map((question) => {
+            let filteredAudios = question.audios.filter((audio: any) =>
+              audio?.language?.code === 'en'
+            );
 
-        return {
-          ...question,
-          audios: filteredAudios, // Replace audios array with the filtered or fallback one
-        };
+            if (filteredAudios.length === 0 && question.audios.length > 0) {
+              filteredAudios = [question.audios[0]]; // fallback to first audio
+            }
 
-        });
+            if (filteredAudios.length === 0) return null; // no audio at all, skip
+
+            return {
+              ...question,
+              audios: filteredAudios,
+            };
+          })
+          .filter(Boolean); // removes nulls
       }
 
       return {
@@ -178,21 +186,21 @@ export class StoriesQuestionsController {
   // get story questions with id for admin..
   @get('/story-question-by-id-admin/{questionId}')
   async fetchStoryQuestionByIdForAdmin(
-    @param.path.number('questionId') questionId : number
-  ) : Promise<{success : boolean, message : string, data : StoriesQuestions}>{
-    try{
+    @param.path.number('questionId') questionId: number
+  ): Promise<{ success: boolean, message: string, data: StoriesQuestions }> {
+    try {
       const storyQuestion = await this.storiesQuestionsRepository.findById(questionId);
 
-      if(!storyQuestion){
+      if (!storyQuestion) {
         throw new HttpErrors.NotFound('Story question not found');
       }
 
-      return{
-        success : true,
-        message : "Story question data",
-        data : storyQuestion
+      return {
+        success: true,
+        message: "Story question data",
+        data: storyQuestion
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -212,8 +220,8 @@ export class StoriesQuestionsController {
 
       // checking for header
       const authHeader = request.headers.authorization;
-      let currentUser : any = {};
-      if(authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer'){
+      let currentUser: any = {};
+      if (authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer') {
         currentUser = await this.validateCredentials(authHeader);
       }
 
@@ -262,30 +270,30 @@ export class StoriesQuestionsController {
   // Update Story api..
   @patch('/stories-questions/{questionId}')
   async updateStoryQuestionById(
-    @param.path.number('questionId') questionId : number,
+    @param.path.number('questionId') questionId: number,
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(StoriesQuestions, {partial: true}),
+          schema: getModelSchemaRef(StoriesQuestions, { partial: true }),
         },
       },
     })
     storyQuestionData: StoriesQuestions,
-  ) : Promise<{success : boolean, message : string}>{
-    try{
+  ): Promise<{ success: boolean, message: string }> {
+    try {
       const storyQuestion = await this.storiesQuestionsRepository.findById(questionId);
 
-      if(!storyQuestion){
+      if (!storyQuestion) {
         throw new HttpErrors.NotFound('Story question Not Found');
       }
 
       await this.storiesQuestionsRepository.updateById(storyQuestion.id, storyQuestionData);
 
-      return{
-        success : true,
-        message : "Story question updated"
+      return {
+        success: true,
+        message: "Story question updated"
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
