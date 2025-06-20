@@ -764,6 +764,8 @@ export class StoriesController {
 
       let filteredStories: any[] = [];
 
+      console.log('user', user);
+
       for (const story of allStories) {
         let selectedAudios : any = [];
 
