@@ -712,7 +712,7 @@ export class UsersController {
   // update-user-profile
   @authenticate({
     strategy: 'jwt',
-    options: { required: [PermissionKeys.ADMIN] },
+    options: { required: [PermissionKeys.ADMIN, PermissionKeys.LISTENER] },
   })
   @patch('/update-user-profile')
   async updateUserProfile(

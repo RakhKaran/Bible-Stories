@@ -741,21 +741,16 @@ export class StoriesController {
       const authHeader = request.headers.authorization;
 
       let currentUser: any = {};
+
       let user: any = {};
 
-      if (
-        authHeader &&
-        authHeader !== '' &&
-        authHeader !== null &&
-        authHeader !== undefined &&
-        authHeader !== 'Bearer'
-      ) {
+      if (authHeader && authHeader !== '' && authHeader !== null && authHeader !== undefined && authHeader !== 'Bearer') {
         currentUser = await this.validateCredentials(authHeader);
       }
 
       if (currentUser.id) {
         user = await this.usersRepository.findById(currentUser.id);
-      }
+      };
 
       const allStories = await this.storiesRepository.find({
         where: { categoryId },
@@ -767,7 +762,7 @@ export class StoriesController {
       console.log('user', user);
 
       for (const story of allStories) {
-        let selectedAudios : any = [];
+        let selectedAudios: any = [];
 
         if (user && user.audioLanguage) {
           selectedAudios = story.audios.filter(
