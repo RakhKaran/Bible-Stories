@@ -437,15 +437,10 @@ export class AnalyticsController {
         `,
       );
 
-      const parsedStories = topStories.map((story: any) => ({
-        ...story,
-        images: JSON.parse(story.images || '[]'),
-      }));
-
       return {
         success: true,
         message: 'Top stories retrieved successfully',
-        data: parsedStories,
+        data: topStories,
       };
     } catch (error) {
       console.error('Error retrieving top stories:', error);
