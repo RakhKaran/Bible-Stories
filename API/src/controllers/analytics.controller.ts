@@ -437,10 +437,15 @@ export class AnalyticsController {
         `,
       );
 
+      const parsedStories = topStories.map((story: any) => ({
+        ...story,
+        images: JSON.parse(story.images || '[]'),
+      }));
+
       return {
         success: true,
         message: 'Top stories retrieved successfully',
-        data: topStories,
+        data: parsedStories,
       };
     } catch (error) {
       console.error('Error retrieving top stories:', error);
@@ -603,7 +608,7 @@ export class AnalyticsController {
       }
 
       // 1. Audio History Data
-      const audioHistoryData : any = await this.audioHistoryRepository.find({
+      const audioHistoryData: any = await this.audioHistoryRepository.find({
         where: {
           usersId: userId,
         },
@@ -620,7 +625,7 @@ export class AnalyticsController {
       for (const entry of audioHistoryData) {
         cumulativeListeningDuration += entry.cumulativeListeningDuration || 0;
 
-        const language : any = entry.languageData;
+        const language: any = entry.languageData;
         if (language) {
           const existingLang = languageWiseDuration.find((l: any) => l.id === language.id);
           if (existingLang) {
@@ -705,7 +710,7 @@ export class AnalyticsController {
 // Based on village we can show Top stories and language
 
 // user based report
-// report contain 
+// report contain
 // users fav. stories
 // users avg time on app
 // users most listened stories
