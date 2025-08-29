@@ -1,15 +1,15 @@
-import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig} from '@loopback/core';
+import { BootMixin } from '@loopback/boot';
+import { ApplicationConfig } from '@loopback/core';
 import {
   RestExplorerBindings,
   RestExplorerComponent,
 } from '@loopback/rest-explorer';
-import {RepositoryMixin} from '@loopback/repository';
-import {RestApplication} from '@loopback/rest';
-import {ServiceMixin} from '@loopback/service-proxy';
+import { RepositoryMixin } from '@loopback/repository';
+import { RestApplication } from '@loopback/rest';
+import { ServiceMixin } from '@loopback/service-proxy';
 import multer from 'multer';
 import path from 'path';
-import {MySequence} from './sequence';
+import { MySequence } from './sequence';
 import {
   EmailManagerBindings,
   FILE_UPLOAD_SERVICE,
@@ -19,19 +19,20 @@ import {
   AuthenticationComponent,
   registerAuthenticationStrategy,
 } from '@loopback/authentication';
-import {JWTStrategy} from './authentication-strategy/jwt-strategy';
-import {BcryptHasher} from './services/hash.password.bcrypt';
-import {JWTService} from './services/jwt-service';
-import {MyUserService} from './services/user-service';
-import {EmailService} from './services/email.service';
+import { JWTStrategy } from './authentication-strategy/jwt-strategy';
+import { BcryptHasher } from './services/hash.password.bcrypt';
+import { JWTService } from './services/jwt-service';
+import { MyUserService } from './services/user-service';
+import { EmailService } from './services/email.service';
 import { FirebaseAdmin } from './services/firebase.service';
-import {NotificationCronJob} from './services/cronjob.service';
-import {ExcelImportService} from './services/excel-import.service';
+import { NotificationCronJob } from './services/cronjob.service';
+import { ExcelImportService } from './services/excel-import.service';
 import { NotificationService } from './services/notification.service';
 import { NotificationCron } from './services/notificationCron.service';
 import { UserAnalyticsService } from './services/user-analytics.service';
+import slugify from 'slugify';
 
-export {ApplicationConfig};
+export { ApplicationConfig };
 
 export class BibleStoriesApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
@@ -93,8 +94,19 @@ export class BibleStoriesApplication extends BootMixin(
         destination,
         // Use the original file name with a timestamp prefix
         filename: (req, file, cb) => {
-          const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-          const fileName = `${timestamp}_${file.originalname}`;
+          const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+
+          // Slugify original name (without extension)
+          const originalName = file.originalname;
+          const ext = originalName.substring(originalName.lastIndexOf("."));
+          const baseName = originalName.substring(0, originalName.lastIndexOf("."));
+
+          const safeName = slugify(baseName, {
+            lower: true,
+            strict: true, // removes special chars like quotes
+          });
+
+          const fileName = `${timestamp}_${safeName}${ext}`;
           cb(null, fileName);
         },
       }),

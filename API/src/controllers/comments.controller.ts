@@ -15,17 +15,17 @@ export class CommentsController {
     @inject('datasources.bibleStories')
     public dataSource: BibleStoriesDataSource,
     @repository(CommentsRepository)
-    public commentsRepository : CommentsRepository,
-  ) {}
+    public commentsRepository: CommentsRepository,
+  ) { }
 
   // add new comment...
   @authenticate({
-    strategy : 'jwt',
-    options : [PermissionKeys.ADMIN, PermissionKeys.LISTENER]
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]
   })
   @post('/comment')
   async newComment(
-    @inject(AuthenticationBindings.CURRENT_USER) currentUser : UserProfile,
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
     @requestBody({
       content: {
         'application/json': {
@@ -36,14 +36,14 @@ export class CommentsController {
         },
       },
     })
-    commentData : Omit<Comments, 'id'>
-  ) : Promise<{success : boolean, message : string}>{
+    commentData: Omit<Comments, 'id'>
+  ): Promise<{ success: boolean, message: string }> {
     const repo = new DefaultTransactionalRepository(Comments, this.dataSource);
     const tx = await repo.beginTransaction(IsolationLevel.READ_COMMITTED);
-    try{
+    try {
       const data = {
         ...commentData,
-        usersId : currentUser.id
+        usersId: currentUser.id
       };
       await this.commentsRepository.create(data, {
         transaction: tx,
@@ -51,11 +51,11 @@ export class CommentsController {
 
       await tx.commit();
 
-      return{
-        success : true,
-        message : 'Comment Added Successfully'
+      return {
+        success: true,
+        message: 'Comment Added Successfully'
       }
-    }catch(error){
+    } catch (error) {
       await tx.rollback();
       throw error;
     }
@@ -68,22 +68,22 @@ export class CommentsController {
   // })
   @get('/comments/{storyId}')
   async getParentComments(
-    @param.path.number('storyId') storyId : number,
-    @param.query.number('limit') limit : number,
-    @param.query.number('skip') skip : number,
-  ) : Promise<{success : boolean, message : string, data: object, commentsCount: Count}>{
-    try{
+    @param.path.number('storyId') storyId: number,
+    @param.query.number('limit') limit: number,
+    @param.query.number('skip') skip: number,
+  ): Promise<{ success: boolean, message: string, data: object, commentsCount: Count }> {
+    try {
       // fetching comments...
       const comments = await this.commentsRepository.find(
         {
-          where : {
-            storiesId : storyId,
-            isParentComment : true
+          where: {
+            storiesId: storyId,
+            isParentComment: true
           },
-          limit : limit || 10,
-          skip : skip || 0,
+          limit: limit || 10,
+          skip: skip || 0,
           order: ['createdAt DESC'],
-          include : [
+          include: [
             {
               relation: 'users',
               scope: {
@@ -100,29 +100,29 @@ export class CommentsController {
       );
 
       // fetching comments count....
-      const commentsCount = await this.commentsRepository.count({isParentComment : true, storiesId : storyId});
+      const commentsCount = await this.commentsRepository.count({ isParentComment: true, storiesId: storyId });
 
-      let filteredComments : any = [];
+      let filteredComments: any = [];
 
       // fetching reply count of each comment...
       await Promise.all(comments.map(async (comment) => {
-        const replies = await this.commentsRepository.find({where : {repliedCommentId : comment.id}});
+        const replies = await this.commentsRepository.find({ where: { repliedCommentId: comment.id } });
 
         const repliesCount = replies.length;
 
         filteredComments.push({
           ...comment,
-          repliesCount : repliesCount
+          repliesCount: repliesCount
         })
       }))
 
-      return{
-        success : true,
-        message : 'comments list',
-        data : filteredComments,
-        commentsCount : commentsCount,
+      return {
+        success: true,
+        message: 'comments list',
+        data: filteredComments,
+        commentsCount: commentsCount,
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
@@ -130,20 +130,20 @@ export class CommentsController {
   // get comments replies...
   @get('/comment-replies/{commentId}')
   async getCommentReplies(
-    @param.path.number('commentId') commentId : number,
-    @param.query.number('limit') limit : number,
-    @param.query.number('skip') skip : number
-  ) : Promise<{success: boolean, message: string, data: object, repliesCount : Count}>{
-    try{
+    @param.path.number('commentId') commentId: number,
+    @param.query.number('limit') limit: number,
+    @param.query.number('skip') skip: number
+  ): Promise<{ success: boolean, message: string, data: object, repliesCount: Count }> {
+    try {
       // fetching replies...
       const replies = await this.commentsRepository.find(
         {
-          where : {
-            repliedCommentId : commentId
+          where: {
+            repliedCommentId: commentId
           },
-          limit : limit || 10,
-          skip : skip || 0,
-          include : [
+          limit: limit || 10,
+          skip: skip || 0,
+          include: [
             {
               relation: 'users',
               scope: {
@@ -160,52 +160,52 @@ export class CommentsController {
       );
 
       // fetching replies count...
-      const repliesCount = await this.commentsRepository.count({repliedCommentId : commentId});
+      const repliesCount = await this.commentsRepository.count({ repliedCommentId: commentId });
 
-      let finalReplies : any = []
+      let finalReplies: any = []
 
       // fetching nested replies count...
-      await Promise.all(replies.map(async(reply) => {
-        const nestedReplies = await this.commentsRepository.find({where : {repliedCommentId : reply.id}});
+      await Promise.all(replies.map(async (reply) => {
+        const nestedReplies = await this.commentsRepository.find({ where: { repliedCommentId: reply.id } });
 
         const repliesCount = nestedReplies.length;
 
         finalReplies.push({
           ...reply,
-          repliesCount : repliesCount
+          repliesCount: repliesCount
         })
       }))
 
-      return{
-        success : true,
-        message : 'Replies on comment',
-        data : finalReplies,
-        repliesCount : repliesCount
+      return {
+        success: true,
+        message: 'Replies on comment',
+        data: finalReplies,
+        repliesCount: repliesCount
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
 
   // delete comment and its replies...
   @authenticate({
-    strategy : 'jwt',
-    options : [PermissionKeys.ADMIN, PermissionKeys.LISTENER]
+    strategy: 'jwt',
+    options: [PermissionKeys.ADMIN, PermissionKeys.LISTENER]
   })
   @del('/comment/{commentId}')
   async deleteCommentById(
-    @param.path.number('commentId') commentId : number
-  ) : Promise<{success : boolean, message : string}>{
-    try{
+    @param.path.number('commentId') commentId: number
+  ): Promise<{ success: boolean, message: string }> {
+    try {
       await this.commentsRepository.deleteById(commentId);
 
-      await this.commentsRepository.deleteAll({repliedCommentId : commentId});
+      await this.commentsRepository.deleteAll({ repliedCommentId: commentId });
 
-      return{
-        success : true,
-        message : 'Comment Deleted'
+      return {
+        success: true,
+        message: 'Comment Deleted'
       }
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }

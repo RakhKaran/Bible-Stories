@@ -39,7 +39,7 @@ import slugify from 'slugify';
 
 export class FileUploadProvider implements Provider<FileUploadHandler> {
   constructor(@config() private options: multer.Options = {}) {
-    // if (!this.options.storage) {
+    if (!this.options.storage) {
     this.options.storage = multer.diskStorage({
       destination: this.options.dest || undefined,
       filename: (req, file, cb) => {
@@ -60,9 +60,11 @@ export class FileUploadProvider implements Provider<FileUploadHandler> {
 
         const fileName = `${timestamp}_${slugifiedName}${ext}`;
         cb(null, fileName);
+        console.log('Saving to:', this.options.dest, 'Generated name:', fileName);
+
       },
     });
-    // }
+    }
   }
 
   value(): FileUploadHandler {

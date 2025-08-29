@@ -193,7 +193,6 @@ export default function GeneralQuestionsNewEditForm({ currentQuestion}) {
         formData.append('file', file);
         const response = await axiosInstance.post('/files', formData);
         const { data } = response;
-  
         // Set audio details
         const fileUrl = data?.files[0]?.fileUrl;
         // Fetch audio duration
