@@ -1,6 +1,6 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {Stories} from './stories.model';
-import {Users} from './users.model';
+import { Entity, model, property, belongsTo } from '@loopback/repository';
+import { Stories } from './stories.model';
+import { Users } from './users.model';
 
 @model()
 export class Comments extends Entity {
@@ -26,6 +26,11 @@ export class Comments extends Entity {
     type: 'object',
   })
   audio: object;
+
+  @property({
+    type: 'number',
+  })
+  audioDuration: number;
 
   @property({
     type: 'boolean',
