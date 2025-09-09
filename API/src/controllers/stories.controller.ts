@@ -495,7 +495,7 @@ export class StoriesController {
           // limit : 5
         });
 
-        if (cat.categoryName.trim().toLowerCase() === 'Old Testament'.trim().toLowerCase()) {
+        if (cat.id === 1) {
           if (user && user.audioLanguage) {
             // Filter stories to include only audio matching the user's selected language
             await Promise.all(
