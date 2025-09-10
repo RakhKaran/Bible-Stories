@@ -144,6 +144,12 @@ export default function UserListView() {
     });
   }, [dataFiltered.length, dataInPage.length, table, tableData]);
 
+  const handleQuickEditRow = useCallback(
+    (id) => {
+      router.push(paths.dashboard.user.edit(id));
+    },
+    [router]
+  );
   const handleEditRow = useCallback(
     (id) => {
       router.push(paths.dashboard.user.edit(id));
@@ -342,6 +348,7 @@ export default function UserListView() {
                         selected={table.selected.includes(row.id)}
                         onSelectRow={() => table.onSelectRow(row.id)}
                         onDeleteRow={() => handleDeleteRow(row.id)}
+                        onQuickEditRow={() => handleQuickEditRow(row.id)}
                         onEditRow={() => handleEditRow(row.id)}
                         onRefreshUsers={() => refreshUsers()}
                         onSessionIconClick={() => { setSessions(row.lastLogins); lastLogin.onTrue() }}
