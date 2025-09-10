@@ -24,7 +24,7 @@ import UserQuickEditForm from './user-quick-edit-form';
 
 // ----------------------------------------------------------------------
 
-export default function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRow, onRefreshUsers, onSessionIconClick }) {
+export default function UserTableRow({ row, selected, onEditRow,onQuickEditRow, onSelectRow, onDeleteRow, onRefreshUsers, onSessionIconClick }) {
   const navigate = useNavigate();
   const { firstName, lastName, avatar, email, permissions, isActive, phoneNumber } = row;
 
@@ -47,7 +47,7 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
   return (
     <>
       <TableRow hover selected={selected}>
-        <TableCell sx={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+        <TableCell onClick={() => onEditRow()} sx={{ cursor: 'pointer', "&:hover": { textDecoration: 'underline' } }}>
           <Avatar alt={name} src={avatar?.fileUrl} sx={{ mr: 2 }} />
 
           <ListItemText
@@ -127,7 +127,7 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
 
         <MenuItem
           onClick={() => {
-            onEditRow();
+            onQuickEditRow();
             popover.onClose();
           }}
         >
@@ -154,6 +154,7 @@ export default function UserTableRow({ row, selected, onEditRow, onSelectRow, on
 UserTableRow.propTypes = {
   onDeleteRow: PropTypes.func,
   onEditRow: PropTypes.func,
+  onQuickEditRow:PropTypes.func,
   onSelectRow: PropTypes.func,
   row: PropTypes.object,
   selected: PropTypes.bool,
