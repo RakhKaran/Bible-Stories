@@ -92,17 +92,15 @@ export default function UserNewEditForm({ currentUser }) {
       console.info('DATA', formData);
 
       const inputData = {
-        name: formData.name,
+        firstName: formData.name,
         city: formData.city,
         fullAddress: formData.fullAddress,
-        // password: '',
         state: formData.state,
-        role: [formData.role],
+        permissions: [formData.role],
         country: formData.country,
         phoneNumber: formData.phoneNumber,
         zipCode: formData.zipCode,
-        isDeleted: false,
-        isActive: true,
+        isActive: currentUser?.isActive,
       };
       if (formData.avatarUrl) {
         inputData.avatar = {
