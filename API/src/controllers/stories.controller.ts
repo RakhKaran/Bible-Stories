@@ -582,7 +582,7 @@ export class StoriesController {
                 audio?.language?.code === 'en'
               ).length > 0 ? story.audios.filter((audio: any) =>
                 audio?.language?.code === 'en'
-              ) : story?.audios[0];
+              ) : [story?.audios[0]];
 
               const lastDuration = 0;
 
@@ -681,7 +681,7 @@ export class StoriesController {
                 audio?.language?.code === 'en'
               )?.length > 0 ? story.audios.filter((audio: any) =>
                 audio?.language?.code === 'en'
-              ) : story?.audios[0];
+              ) : [story?.audios[0]];
 
               const lastDuration = 0;
 
