@@ -47,7 +47,7 @@ export default function UserTableRow({ row, selected, onEditRow,onQuickEditRow, 
   return (
     <>
       <TableRow hover selected={selected}>
-        <TableCell onClick={() => onEditRow()} sx={{ cursor: 'pointer', "&:hover": { textDecoration: 'underline' } }}>
+          <TableCell onClick={() => onEditRow()} sx={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', '&:hover': {textDecoration: 'underline'}, cursor: 'pointer' }}>
           <Avatar alt={name} src={avatar?.fileUrl} sx={{ mr: 2 }} />
 
           <ListItemText

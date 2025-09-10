@@ -1,6 +1,7 @@
+/* eslint-disable no-nested-ternary */
 import PropTypes from 'prop-types';
 import * as Yup from 'yup';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 // @mui
@@ -30,6 +31,7 @@ import FormProvider, {
   RHFUploadAvatar,
   RHFAutocomplete,
 } from 'src/components/hook-form';
+import axiosInstance from 'src/utils/axios';
 
 // ----------------------------------------------------------------------
 
@@ -40,36 +42,30 @@ export default function UserNewEditForm({ currentUser }) {
 
   const NewUserSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
-    email: Yup.string().required('Email is required').email('Email must be a valid email address'),
+    email: Yup.string().email('Email must be a valid email address'),
     phoneNumber: Yup.string().required('Phone number is required'),
-    address: Yup.string().required('Address is required'),
     country: Yup.string().required('Country is required'),
-    company: Yup.string().required('Company is required'),
     state: Yup.string().required('State is required'),
     city: Yup.string().required('City is required'),
     role: Yup.string().required('Role is required'),
     zipCode: Yup.string().required('Zip code is required'),
-    avatarUrl: Yup.mixed().nullable().required('Avatar is required'),
+    avatarUrl: Yup.mixed().nullable(),
     // not required
-    status: Yup.string(),
-    isVerified: Yup.boolean(),
+    isActive: Yup.boolean(),
   });
 
   const defaultValues = useMemo(
     () => ({
-      name: currentUser?.name || '',
+      name: currentUser?.firstName || '',
       city: currentUser?.city || '',
-      role: currentUser?.role || '',
+      role: currentUser?.permissions?.length > 0 ? currentUser?.permissions.includes('listener') ? 'listener' : 'admin' : '',
       email: currentUser?.email || '',
       state: currentUser?.state || '',
-      status: currentUser?.status || '',
-      address: currentUser?.address || '',
+      isActive: currentUser?.isActive || '',
       country: currentUser?.country || '',
       zipCode: currentUser?.zipCode || '',
-      company: currentUser?.company || '',
-      avatarUrl: currentUser?.avatarUrl || null,
+      avatarUrl: currentUser?.avatar?.fileUrl || null,
       phoneNumber: currentUser?.phoneNumber || '',
-      isVerified: currentUser?.isVerified || true,
     }),
     [currentUser]
   );
@@ -90,32 +86,79 @@ export default function UserNewEditForm({ currentUser }) {
 
   const values = watch();
 
-  const onSubmit = handleSubmit(async (data) => {
+    const onSubmit = handleSubmit(async (formData) => {
+    console.log('Submit Triggered');
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.info('DATA', formData);
+
+      const inputData = {
+        name: formData.name,
+        city: formData.city,
+        fullAddress: formData.fullAddress,
+        // password: '',
+        state: formData.state,
+        role: [formData.role],
+        country: formData.country,
+        phoneNumber: formData.phoneNumber,
+        zipCode: formData.zipCode,
+        isDeleted: false,
+        isActive: true,
+      };
+      if (formData.avatarUrl) {
+        inputData.avatar = {
+          fileUrl: formData.avatarUrl,
+        };
+      }
+
+      if (!currentUser) {
+        inputData.password = formData.password;
+
+        await axiosInstance.post('/register', inputData);
+        enqueueSnackbar('User created successfully!');
+      } else if (currentUser?.id) {
+        await axiosInstance.patch(`/update-profile/${currentUser.id}`, inputData);
+        enqueueSnackbar('User updated successfully!');
+      } else {
+        enqueueSnackbar('User ID not found for update.', { variant: 'error' });
+      }
+
       reset();
-      enqueueSnackbar(currentUser ? 'Update success!' : 'Create success!');
       router.push(paths.dashboard.user.list);
-      console.info('DATA', data);
     } catch (error) {
       console.error(error);
+      console.log('error generating user..!');
+      enqueueSnackbar(
+        typeof error === 'string' ? error : error?.error?.message || 'something went wrong',
+        {
+          variant: 'error',
+        }
+      );
     }
   });
 
   const handleDrop = useCallback(
-    (acceptedFiles) => {
+    async (acceptedFiles) => {
       const file = acceptedFiles[0];
-
-      const newFile = Object.assign(file, {
-        preview: URL.createObjectURL(file),
-      });
+      console.log(file);
 
       if (file) {
-        setValue('avatarUrl', newFile, { shouldValidate: true });
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await axiosInstance.post('/files', formData);
+        const { data } = response;
+        console.log(data);
+        setValue('avatarUrl', data?.files[0].fileUrl, {
+          shouldValidate: true,
+        });
       }
     },
     [setValue]
   );
+  useEffect(() => {
+    if(currentUser){
+      reset(defaultValues);
+    }
+  }, [currentUser, defaultValues, reset])
 
   return (
     <FormProvider methods={methods} onSubmit={onSubmit}>
@@ -125,13 +168,13 @@ export default function UserNewEditForm({ currentUser }) {
             {currentUser && (
               <Label
                 color={
-                  (values.status === 'active' && 'success') ||
-                  (values.status === 'banned' && 'error') ||
+                  (values.isActive === true && 'success') ||
+                  (values.isActive === false && 'error') ||
                   'warning'
                 }
                 sx={{ position: 'absolute', top: 24, right: 24 }}
               >
-                {values.status}
+                {values.isActive === true ? 'Active' : 'In-Active'}
               </Label>
             )}
 
@@ -157,62 +200,6 @@ export default function UserNewEditForm({ currentUser }) {
                 }
               />
             </Box>
-
-            {currentUser && (
-              <FormControlLabel
-                labelPlacement="start"
-                control={
-                  <Controller
-                    name="status"
-                    control={control}
-                    render={({ field }) => (
-                      <Switch
-                        {...field}
-                        checked={field.value !== 'active'}
-                        onChange={(event) =>
-                          field.onChange(event.target.checked ? 'banned' : 'active')
-                        }
-                      />
-                    )}
-                  />
-                }
-                label={
-                  <>
-                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                      Banned
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      Apply disable account
-                    </Typography>
-                  </>
-                }
-                sx={{ mx: 0, mb: 3, width: 1, justifyContent: 'space-between' }}
-              />
-            )}
-
-            <RHFSwitch
-              name="isVerified"
-              labelPlacement="start"
-              label={
-                <>
-                  <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                    Email Verified
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Disabling this will automatically send the user a verification email
-                  </Typography>
-                </>
-              }
-              sx={{ mx: 0, width: 1, justifyContent: 'space-between' }}
-            />
-
-            {currentUser && (
-              <Stack justifyContent="center" alignItems="center" sx={{ mt: 3 }}>
-                <Button variant="soft" color="error">
-                  Delete User
-                </Button>
-              </Stack>
-            )}
           </Card>
         </Grid>
 
@@ -262,10 +249,8 @@ export default function UserNewEditForm({ currentUser }) {
 
               <RHFTextField name="state" label="State/Region" />
               <RHFTextField name="city" label="City" />
-              <RHFTextField name="address" label="Address" />
               <RHFTextField name="zipCode" label="Zip/Code" />
-              <RHFTextField name="company" label="Company" />
-              <RHFTextField name="role" label="Role" />
+              <RHFTextField name="role" label="Role" disabled />
             </Box>
 
             <Stack alignItems="flex-end" sx={{ mt: 3 }}>
