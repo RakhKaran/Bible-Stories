@@ -56,7 +56,7 @@ export default function UserAccountChangePassword({ currentUser }) {
   const onSubmit = handleSubmit(async (data) => {
     try {
       const inputData = {
-        phoneNumber: data.phoneNumber,
+        phoneNumber: currentUser.phoneNumber,
         password: data.newPassword,
       };
       await axiosInstance.patch(`/customer/update-new-password`, inputData);
